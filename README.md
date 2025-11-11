@@ -21,6 +21,8 @@ Download the latest release into a directory on your computer & extract.
 
 Open PowerShell in the directory and run `Import-Module .\Osm.PowerShell.Tools.ps1`
 
+First time running? You will be prompted to **Enter your OSM OAuth Client ID** & **Enter your OSM OAuth Client Secret**
+
 ## Commands
 
 TBC
