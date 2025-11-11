@@ -13,3 +13,4 @@ Import-Module .\Osm.PowerShell.Api.ps1
 # Functions
 
 # Main
+Write-Host $sectionTerm

@@ -96,6 +96,8 @@ function Invoke-OsmApi {
     [hashtable]$body = $null
   )
 
+  $action = $url.Split("action=")[1]
+  Write-Host "✅ Invoking OSM API to $method $action"
   $OsmCredentials = Import-OsmCredentials
   $OsmToken = Get-OsmToken -clientId $OsmCredentials.clientId -clientSecret $OsmCredentials.clientSecret
   $headers = @{ Authorization = "Bearer $OsmToken" }
@@ -114,9 +116,17 @@ function Invoke-OsmApi {
 }
 
 # Main
-Invoke-OsmApi -url $userRolesUrl
-#$userRoles = Invoke-OsmApi -url $userRolesUrl
-#$userRoles | ForEach-Object {
-#  $terms = Invoke-OsmApi -url $termsUrl
-#  $terms.26893 | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) }
-#}
+$sectionTerm = @()
+$terms = Invoke-OsmApi -url $termsUrl
+$userRoles = Invoke-OsmApi -url $userRolesUrl
+$userRoles | ForEach-Object {
+  $sectionId = $_.sectionid
+  $sectionName = $_.sectionname
+  $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) }
+  $sectionTerm += [PSCustomObject]@{
+    sectionId   = $sectionId
+    sectionName = $sectionName
+    termId      = $thisTerm.termid
+    termName    = $thisTerm.name
+  }
+}
