@@ -23,9 +23,15 @@ Open PowerShell in the directory and run `Import-Module .\Osm.PowerShell.Tools.p
 
 First time running? You will be prompted to **Enter your OSM OAuth Client ID** & **Enter your OSM OAuth Client Secret**
 
+Once imported you should see an output to the screen of sections you have access to. You will need this reference table when running the commands.
+
 ## Commands
 
-TBC
+#### New-OsmParentRota
+
+Used to create a new parent rota for the current term for the provided section. Rota will be created in your downloads folder and optionally printed to your default printer.
+
+`New-OsmParentRota -sectionId xxxxx` or `New-OsmParentRota -sectionId xxxxx -print`
 
 ## Contributions
 
