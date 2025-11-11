@@ -16,16 +16,26 @@ function New-OsmParentRota {
     [int]$sectionId,
     [switch]$print
   )
+  
   if ($sections.sectionId -notcontains $sectionId) {
     Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
   }
+  
   $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
   $termId = $section.termId
   $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
+  
+  # Members
   $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
   $membersList = (Invoke-OsmApi -url $membersListUrl).items
-  # $membersList | Out-File $downloadsPath\rota_$sectionNameFile.json
+  $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $_.patrolid -gt 0 }
+
+  # Programme
+  $programmeSummaryUrl = $programmeSummaryUrl + "&sectionid=$sectionId&termid=$termId"
+  $programmeSummary = (Invoke-OsmApi -url $programmeSummaryUrl).items
+  $futureMeetings = $programmeSummary | Where-Object { [datetime]$_.meetingdate -gt (Get-Date) }
+
   if ($print) {
     # commenting out until file
     # Get-Content $downloadsPath\rota_$sectionNameFile.html | Out-Printer
