@@ -10,6 +10,8 @@ $tokenFile = "$osmAppPath\osm_token.json"
 $tokenUrl = "https://www.onlinescoutmanager.co.uk/oauth/token"
 $userRolesUrl = "https://www.onlinescoutmanager.co.uk/api.php?action=getUserRoles"
 $termsUrl = "https://www.onlinescoutmanager.co.uk/api.php?action=getTerms"
+$membersListUrl = "https://www.onlinescoutmanager.co.uk/ext/members/contact/?action=getListOfMembers"
+$programmeSummaryUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/?action=getProgrammeSummary"
 
 # Functions
 function Request-Credentials {
@@ -112,21 +114,5 @@ function Invoke-OsmApi {
   }
   catch {
     Write-Error "❌ API call failed: $($_.Exception.Message)" -ErrorAction Stop
-  }
-}
-
-# Main
-$sectionTerm = @()
-$terms = Invoke-OsmApi -url $termsUrl
-$userRoles = Invoke-OsmApi -url $userRolesUrl
-$userRoles | ForEach-Object {
-  $sectionId = $_.sectionid
-  $sectionName = $_.sectionname
-  $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) }
-  $sectionTerm += [PSCustomObject]@{
-    sectionId   = $sectionId
-    sectionName = $sectionName
-    termId      = $thisTerm.termid
-    termName    = $thisTerm.name
   }
 }
