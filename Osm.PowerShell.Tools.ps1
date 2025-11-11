@@ -16,26 +16,31 @@ function New-OsmParentRota {
     [int]$sectionId,
     [switch]$print
   )
-  if ($sectionTerm.sectionId -notcontains $sectionId) {
+  if ($sections.sectionId -notcontains $sectionId) {
     Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
   }
-  $sectionName = ($sectionTerm | Where-Object { $_.sectionId -eq $sectionId }).sectionName
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
-  Write-Output $sectionName | Out-File $downloadsPath\rota_$sectionNameFile.txt
+  $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
+  $membersList = (Invoke-OsmApi -url $membersListUrl).items
+  # $membersList | Out-File $downloadsPath\rota_$sectionNameFile.json
   if ($print) {
-    Get-Content $downloadsPath\rota_$sectionNameFile.txt | Out-Printer
+    # commenting out until file
+    # Get-Content $downloadsPath\rota_$sectionNameFile.html | Out-Printer
   }
 }
 
 # Main
-$sectionTerm = @()
+$sections = @()
 $terms = Invoke-OsmApi -url $termsUrl
 $userRoles = Invoke-OsmApi -url $userRolesUrl
 $userRoles | ForEach-Object {
   $sectionId = $_.sectionid
   $sectionName = $_.sectionname
   $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) }
-  $sectionTerm += [PSCustomObject]@{
+  $sections += [PSCustomObject]@{
     sectionId   = $sectionId
     sectionName = $sectionName
     termId      = $thisTerm.termid
@@ -43,4 +48,4 @@ $userRoles | ForEach-Object {
   }
 }
 
-Write-Output $sectionTerm | Format-Table -AutoSize
+Write-Output $sections | Format-Table -AutoSize
