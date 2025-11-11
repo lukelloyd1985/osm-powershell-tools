@@ -57,24 +57,6 @@ function Import-OsmToken {
     return New-OsmToken -clientId $clientId -clientSecret $clientSecret
   }
 }
-function Update-OsmToken {
-  param($refreshToken, $clientId, $clientSecret)
-  Write-Host "🔄 Refreshing token..."
-  $body = @{
-    grant_type    = "refresh_token"
-    refresh_token = $refreshToken
-    client_id     = $clientId
-    client_secret = $clientSecret
-  }
-  try {
-    $response = Invoke-RestMethod -Uri $tokenUrl -Method Post -Body $body
-    Export-OsmToken $response
-    return $response.access_token
-  }
-  catch {
-    Write-Error "❌ Token refresh failed: $($_.Exception.Message)" -ErrorAction Stop
-  }
-}
 function New-OsmToken {
   param($clientId, $clientSecret)
     
@@ -102,7 +84,9 @@ function Get-OsmToken {
     return $osmToken.access_token
   }
   else {
-    return Update-OsmToken -refreshToken $osmToken.refresh_token -clientId $clientId -clientSecret $clientSecret
+    Write-Warning "⚠️ Existing token is invalid. Requesting token..."
+    $newOsmToken = New-OsmToken -clientId $clientId -clientSecret $clientSecret
+    return $newOsmToken.access_token
   }
 }
 function Invoke-OsmApi {
@@ -131,3 +115,8 @@ function Invoke-OsmApi {
 
 # Main
 Invoke-OsmApi -url $userRolesUrl
+#$userRoles = Invoke-OsmApi -url $userRolesUrl
+#$userRoles | ForEach-Object {
+#  $terms = Invoke-OsmApi -url $termsUrl
+#  $terms.26893 | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) }
+#}
