@@ -38,6 +38,10 @@ function Import-OsmCredentials {
     return Request-Credentials
   }
 }
+function Remove-OsmCredentials {
+  Remove-Item -Path $credentialsFile -Force
+  Write-Host "❌ Removed credentials file"
+}
 function Export-OsmToken {
   param($response)
   $data = @{
@@ -58,6 +62,10 @@ function Import-OsmToken {
     Write-Warning "⚠️ Failed to load token file. Requesting token..."
     return New-OsmToken -clientId $clientId -clientSecret $clientSecret
   }
+}
+function Remove-OsmToken {
+  Remove-Item -Path $tokenFile -Force
+  Write-Host "❌ Removed token file"
 }
 function New-OsmToken {
   param($clientId, $clientSecret)
