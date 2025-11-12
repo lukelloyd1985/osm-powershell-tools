@@ -31,6 +31,8 @@ Once imported you should see an output to the screen of sections you have access
 
 Used to create a new parent rota for the current term for the provided section. Rota will be created in your downloads folder and optionally printed to your default printer.
 
+Create and populate `exclude_{section_name}.txt` (replace {section_name} with relevant value) in your downloads folder with list (one per line) of surnames to exclude from rota.
+
 `New-OsmParentRota -sectionId xxxxx` or `New-OsmParentRota -sectionId xxxxx -print`
 
 ## Contributions

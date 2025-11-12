@@ -29,7 +29,8 @@ function New-OsmParentRota {
   # Members
   $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
   $membersList = (Invoke-OsmApi -url $membersListUrl).items
-  $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $_.patrolid -gt 0 }
+  $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt
+  $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $_.patrolid -gt 0 }
 
   # Programme
   $programmeSummaryUrl = $programmeSummaryUrl + "&sectionid=$sectionId&termid=$termId"
