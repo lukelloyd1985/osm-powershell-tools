@@ -31,6 +31,17 @@ function New-OsmParentRota {
   $membersList = (Invoke-OsmApi -url $membersListUrl).items
   $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $_.patrolid -gt 0 }
+  $initials = foreach ($member in $filteredMembers) {
+    $fname = $member.firstname
+    $lname = $member.lastname
+    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
+    if ($lname -match "-") {
+      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
+    } else {
+      $linit = $lname[0].ToString().ToUpper()
+    }
+    "$finit$linit"
+  }
 
   # Programme
   $programmeSummaryUrl = $programmeSummaryUrl + "&sectionid=$sectionId&termid=$termId"
