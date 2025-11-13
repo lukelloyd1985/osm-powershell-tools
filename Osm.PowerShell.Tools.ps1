@@ -6,6 +6,25 @@
 $shell = New-Object -ComObject Shell.Application
 $downloads = $shell.Namespace('shell:Downloads')
 $downloadsPath = $downloads.Self.Path
+$htmlStyle = @'
+<style>
+table {
+  width: 600px;
+  border-collapse: collapse;
+  border-width: 2px;
+  border-style: solid;
+  border-color: black;
+  color: black;
+  font-size: 24px;
+  text-align: center;
+}
+
+th {
+  background-color: #0000ff;
+  color: white;
+}
+</style>
+'@
 
 # Import OSM API
 Import-Module .\Osm.PowerShell.Api.ps1
@@ -48,9 +67,38 @@ function New-OsmParentRota {
   $programmeSummary = (Invoke-OsmApi -url $programmeSummaryUrl).items
   $futureMeetings = $programmeSummary | Where-Object { [datetime]$_.meetingdate -gt (Get-Date) }
 
+  # Randomly assign 2 members initials per meeting (with no re-use)
+  $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
+  $assignments = @()
+  $index = 0
+  foreach ($meeting in $futureMeetings) {
+    $dateUK = (Get-Date $meeting.meetingdate -Format "dd-MM-yyyy")
+    if ($shuffledInitials.Count -ge 2) {
+      $assigned = $shuffledInitials[0..1]
+      $shuffledInitials = $shuffledInitials[2..($shuffledInitials.Count-1)]
+      $assignedText = ($assigned -join " & ")
+    } else {
+      $assignedText = "None"
+    }
+    $assignments += [PSCustomObject]@{
+      Date     = $dateUK
+      Title    = $meeting.title
+      Assigned = $assignedText
+    }
+    $index++
+  }
+
+  # Output rota
+  $assignments | Format-Table -AutoSize
+  $htmlParams = @{
+    Head = $htmlStyle
+    Title = "Parent Rota"
+    PreContent = "<h1>Parent rota for this term:</h1>"
+  }
+  $assignments | ConvertTo-Html @htmlParams | Out-File $downloadsPath\parent_rota_$sectionNameFile.html
+
   if ($print) {
-    # commenting out until file
-    # Get-Content $downloadsPath\rota_$sectionNameFile.html | Out-Printer
+    Get-Content $downloadsPath\parent_rota_$sectionNameFile.html | Out-Printer
   }
 }
 
