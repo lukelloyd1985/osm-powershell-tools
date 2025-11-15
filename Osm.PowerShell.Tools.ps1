@@ -132,7 +132,7 @@ $userRoles = Invoke-OsmApi -url $userRolesUrl
 $userRoles | ForEach-Object {
   $sectionId = $_.sectionid
   $sectionName = $_.sectionname
-  $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) }
+  $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) -and $_.past -eq "False" }
   $sections += [PSCustomObject]@{
     sectionId   = $sectionId
     sectionName = $sectionName
