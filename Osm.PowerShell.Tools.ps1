@@ -42,13 +42,14 @@ function New-OsmParentRota {
   
   $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
   $termId = $section.termId
+  $termName = $section.termName
   $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
   
   # Members
   $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
   $membersList = (Invoke-OsmApi -url $membersListUrl).items
-  $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt
+  $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt -ErrorAction SilentlyContinue
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $_.patrolid -gt 0 }
   $initials = foreach ($member in $filteredMembers) {
     $fname = $member.firstname
@@ -92,8 +93,8 @@ function New-OsmParentRota {
   $assignments | Format-Table -AutoSize
   $htmlParams = @{
     Head = $htmlStyle
-    Title = "Parent Rota"
-    PreContent = "<h1>Parent rota for this term:</h1>"
+    Title = "$sectionName Parent Rota"
+    PreContent = "<h1>$sectionName parent rota for $termName</h1>"
   }
   $assignments | ConvertTo-Html @htmlParams | Out-File $downloadsPath\parent_rota_$sectionNameFile.html
 
