@@ -76,7 +76,7 @@ function New-OsmToken {
     grant_type    = "client_credentials"
     client_id     = $clientId
     client_secret = $clientSecret
-    scope         = "section:member:read section:programme:read section:event:read"
+    scope         = "section:member:read section:programme:read section:event:read section:attendance:read section:administration:read section:administration:write"
   }
 
   try {
