@@ -102,6 +102,26 @@ function New-OsmParentRota {
     Get-Content $downloadsPath\parent_rota_$sectionNameFile.html | Out-Printer
   }
 }
+function Get-OsmPaperRegister {
+  param (
+    [int]$sectionId,
+    [switch]$print
+  )
+  
+  if ($sections.sectionId -notcontains $sectionId) {
+    Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
+  }
+  
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $termName = $section.termName
+  $sectionName = $section.sectionName
+  $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
+
+  if ($print) {
+    Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
+  }
+}
 
 # Main
 $sections = @()
