@@ -12,6 +12,7 @@ $userRolesUrl = "https://www.onlinescoutmanager.co.uk/api.php?action=getUserRole
 $termsUrl = "https://www.onlinescoutmanager.co.uk/api.php?action=getTerms"
 $membersListUrl = "https://www.onlinescoutmanager.co.uk/ext/members/contact/?action=getListOfMembers"
 $programmeSummaryUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/?action=getProgrammeSummary"
+$accountPreferences = "https://www.onlinescoutmanager.co.uk/v3/settings/account_preferences"
 $printRegisterUrl = "https://www.onlinescoutmanager.co.uk/ext/members/attendance/?action=printRegister&mode=future"
 
 # Functions
