@@ -35,6 +35,12 @@ Create and populate `exclude_{section_name}.txt` (replace {section_name} with re
 
 `New-OsmParentRota -sectionId xxxxx` or `New-OsmParentRota -sectionId xxxxx -print`
 
+#### Get-OsmPaperRegister
+
+Used to get a paper register for the current term for the provided section. Register will be created in your downloads folder and optionally printed to your default printer.
+
+`Get-OsmPaperRegister -sectionId xxxxx` or `Get-OsmPaperRegister -sectionId xxxxx -print`
+
 ## Contributions
 
 If you find any issues or would like additional features then please open a GitHub issue providing as much detail as possible.

@@ -114,9 +114,11 @@ function Get-OsmPaperRegister {
   
   $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
   $termId = $section.termId
-  $termName = $section.termName
   $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
+  $printRegisterUrl = $printRegisterUrl + "&sectionid=$sectionId&termid=$termId"
+  $printRegister = Invoke-OsmApi -url $printRegisterUrl
+  $printRegister | Out-File $downloadsPath\paper_register_$sectionNameFile.pdf
 
   if ($print) {
     Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
