@@ -105,7 +105,8 @@ function Invoke-OsmApi {
   param (
     [string]$url,
     [string]$method = "GET",
-    [hashtable]$body = $null
+    [hashtable]$body = $null,
+    [string]$file = $null
   )
 
   $action = $url.Split("action=")[1]
@@ -117,6 +118,9 @@ function Invoke-OsmApi {
   try {
     if ($method -eq "POST") {
       return Invoke-RestMethod -Uri $url -Headers $headers -Body $body -Method Post
+    }
+    elseif ($method -eq "DOWNLOAD") {
+      return Invoke-RestMethod -Uri $url -Headers $headers -Method Get -OutFile $file
     }
     else {
       return Invoke-RestMethod -Uri $url -Headers $headers -Method Get
