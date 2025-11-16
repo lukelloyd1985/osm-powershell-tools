@@ -80,7 +80,7 @@ function New-OsmToken {
   }
 
   try {
-    $response = Invoke-RestMethod -Uri $tokenUrl -Method Post -Body $body
+    $response = Invoke-RestMethod -Uri $tokenUrl -Method "POST" -Body $body
     Export-OsmToken $response
     return @{ access_token = $response.access_token; expires_at = (Get-Date).AddSeconds($response.expires_in) }
   }
@@ -122,13 +122,13 @@ function Invoke-OsmApi {
 
   try {
     if ($method -eq "POST") {
-      return Invoke-RestMethod -Uri $url -Headers $headers -Body $body -Method Post
+      return Invoke-RestMethod -Uri $url -Headers $headers -Body $body -Method "POST"
     }
     elseif ($method -eq "DOWNLOAD") {
-      return Invoke-RestMethod -Uri $url -Headers $headers -Method Get -OutFile $file
+      return Invoke-RestMethod -Uri $url -Headers $headers -Method "GET" -OutFile $file
     }
     else {
-      return Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+      return Invoke-RestMethod -Uri $url -Headers $headers -Method "GET"
     }
   }
   catch {

@@ -125,7 +125,7 @@ function Get-OsmPaperRegister {
     preference = "sort"
     value      = $order
   }
-  $sortOrder = Invoke-OsmApi -url $accountPreferences -Method Post -Body $body
+  $sortOrder = Invoke-OsmApi -url $accountPreferences -Method "POST" -Body $body
 
   # Download register
   Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
