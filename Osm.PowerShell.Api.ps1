@@ -109,7 +109,12 @@ function Invoke-OsmApi {
     [string]$file = $null
   )
 
-  $action = $url.Split("action=")[1].Split("&")[0]
+  if ($url -match "action") {
+    $action = $url.Split("action=")[1].Split("&")[0]
+  }
+  else {
+    $action = $url.Split("/")[-1]
+  }
   Write-Host "✅ Invoking OSM API to $method $action"
   $OsmCredentials = Import-OsmCredentials
   $OsmToken = Get-OsmToken -clientId $OsmCredentials.clientId -clientSecret $OsmCredentials.clientSecret
