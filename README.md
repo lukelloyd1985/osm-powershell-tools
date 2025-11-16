@@ -37,9 +37,10 @@ Create and populate `exclude_{section_name}.txt` (replace {section_name} with re
 
 #### Get-OsmPaperRegister
 
-Used to get a paper register for the current term for the provided section. Register will be created in your downloads folder and optionally printed to your default printer.
+Used to get a paper register for the current term for the provided section. Register will be created in your downloads folder and optionally printed to your default printer. If required you can pass the `order` parameter to sort the register by `firstname` or `lastname` or `dob` (age) or `patrolid` (six).
 
-`Get-OsmPaperRegister -sectionId xxxxx` or `Get-OsmPaperRegister -sectionId xxxxx -print`
+`Get-OsmPaperRegister -sectionId xxxxx` or `Get-OsmPaperRegister -sectionId xxxxx -order firstname` or 
+`Get-OsmPaperRegister -sectionId xxxxx -print` or `Get-OsmPaperRegister -sectionId xxxxx -order firstname -print`
 
 ## Contributions
 
