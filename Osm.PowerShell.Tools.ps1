@@ -105,6 +105,8 @@ function New-OsmParentRota {
 function Get-OsmPaperRegister {
   param (
     [int]$sectionId,
+    [ValidateSet("firstname", "lastname", "dob", "patrolid")]
+    [string]$order = "patrolid",
     [switch]$print
   )
   
@@ -117,6 +119,15 @@ function Get-OsmPaperRegister {
   $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
   $printRegisterUrl = $printRegisterUrl + "&sectionid=$sectionId&termid=$termId"
+
+  # Set site preferences
+  $body = @{
+    preference = "sort"
+    value      = $order
+  }
+  $sortOrder = Invoke-OsmApi -url $accountPreferences -Method Post -Body $body
+
+  # Download register
   Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
 
   if ($print) {
