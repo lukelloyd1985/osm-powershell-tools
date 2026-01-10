@@ -134,6 +134,25 @@ function Get-OsmPaperRegister {
     Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
   }
 }
+function New-OsmMeetings {
+  param (
+    [int]$sectionId,
+    [ValidateSet("mon", "tue", "wed", "thu", "fri")]
+    [string]$day
+  )
+  
+  if ($sections.sectionId -notcontains $sectionId) {
+    Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
+  }
+
+  if (!$day) {
+    Write-Error "❌ Provide day of week for meetings" -ErrorAction Stop
+  }
+  
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $thisTerm = $terms.$sectionId | Where-Object { $_.termid -eq $termId }
+}
 
 # Main
 $sections = @()
