@@ -90,7 +90,7 @@ function New-OsmParentRota {
   }
 
   # Output rota
-  $assignments | Format-Table -AutoSize
+  Write-Output $assignments | Format-Table -AutoSize
   $htmlParams = @{
     Head = $htmlStyle
     Title = "$sectionName Parent Rota"
@@ -129,6 +129,7 @@ function Get-OsmPaperRegister {
 
   # Download register
   Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
+  Write-Output "Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
 
   if ($print) {
     Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
