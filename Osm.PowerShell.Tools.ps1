@@ -182,7 +182,7 @@ function New-OsmMeetings {
     end       = $termEndDate.ToString('yyyy-MM-dd')
     repeat    = 7
   }
-  Invoke-OsmApi -url $programmeAddMeetingUrl -Method "POST" -Body $body
+  $meetings = Invoke-OsmApi -url $programmeAddMeetingUrl -Method "POST" -Body $body
   Write-Output "✅ Meetings created for $termName"
 }
 
