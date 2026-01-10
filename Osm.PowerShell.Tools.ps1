@@ -129,7 +129,7 @@ function Get-OsmPaperRegister {
 
   # Download register
   Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
-  Write-Output "Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
+  Write-Output "✅ Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
 
   if ($print) {
     Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
