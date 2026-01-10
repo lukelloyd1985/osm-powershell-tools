@@ -152,6 +152,7 @@ function New-OsmMeetings {
 
   $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
   $termId = $section.termId
+  $termName = $section.termName
   $thisTerm = $terms.$sectionId | Where-Object { $_.termid -eq $termId }
   $termStartDate = [datetime]$thisTerm.startdate
   $termEndDate = [datetime]$thisTerm.enddate
@@ -172,6 +173,15 @@ function New-OsmMeetings {
   Write-Output "Term Start Day: $termStartDay"
   Write-Output "Selected Day: $day"
   Write-Output "First Meeting Date: $($firstMeetingDate.ToString('dd-MM-yyyy'))"
+
+  # Create meetings
+  $body = @{
+    start  = $firstMeetingDate.ToString('yyyy-MM-dd')
+    end    = $termEndDate.ToString('yyyy-MM-dd')
+    repeat = 7
+  }
+  Invoke-OsmApi -url $programmeAddMeetingUrl -Method "POST" -Body $body
+  Write-Output "✅ Meetings created for $termName"
 }
 
 # Main
