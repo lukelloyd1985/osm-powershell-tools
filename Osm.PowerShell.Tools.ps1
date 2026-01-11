@@ -50,7 +50,8 @@ function New-OsmParentRota {
   $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
   $membersList = (Invoke-OsmApi -url $membersListUrl).items
   $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt -ErrorAction SilentlyContinue
-  $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $_.patrolid -gt 0 }
+  $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
+  $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $leadersSurnames -notcontains $_.lastname -and $_.patrolid -gt 0 }
   $initials = foreach ($member in $filteredMembers) {
     $fname = $member.firstname
     $lname = $member.lastname
