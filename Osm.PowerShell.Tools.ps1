@@ -216,6 +216,7 @@ function Copy-OsmMeetings {
   $toTermStartDate = [datetime]$toThisTerm.startdate
   $toTermStartDay = $toTermStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3)
   $programmeShareUrl = $programmeShareUrl + "&sectionid=$fromSectionId&termid=$fromTermId&target=$toSectionId"
+  $programmeShareGetUrl = $programmeShareGetUrl + "&sectionid=$toSectionId"
   $programmeShareAcceptUrl = $programmeShareAcceptUrl + "&sectionid=$toSectionId"
 
   # Get the first occurrence of $day from $toTermStartDate for $toFirstMeetingDate
@@ -235,6 +236,7 @@ function Copy-OsmMeetings {
 
   # Copy meetings
   Invoke-OsmApi -url $programmeShareUrl -Method "GET"
+  Invoke-OsmApi -url $programmeShareGetUrl -Method "GET"
   $body = @{
     startdate = $toFirstMeetingDate.ToString('yyyy-MM-dd')
   }
