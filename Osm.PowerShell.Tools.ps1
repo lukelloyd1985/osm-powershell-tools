@@ -69,19 +69,22 @@ function New-OsmParentRota {
   $programmeSummary = (Invoke-OsmApi -url $programmeSummaryUrl).items
   $futureMeetings = $programmeSummary | Where-Object { [datetime]$_.meetingdate -gt (Get-Date) }
 
-  # Randomly assign 2 members initials per meeting (with no re-use)
+  # Randomly assign 2 members initials per meeting (with no re-use, replenishing when empty)
   $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
   $assignments = @()
   $index = 0
   foreach ($meeting in $futureMeetings) {
     $dateUK = (Get-Date $meeting.meetingdate -Format "dd-MM-yyyy")
-    if ($shuffledInitials.Count -ge 2) {
-      $assigned = $shuffledInitials[0..1]
-      $shuffledInitials = $shuffledInitials[2..($shuffledInitials.Count-1)]
-      $assignedText = ($assigned -join " & ")
-    } else {
-      $assignedText = "None"
+
+    # Replenish shuffledInitials if we don't have enough for assignment
+    if ($shuffledInitials.Count -lt 2) {
+      $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
     }
+
+    $assigned = $shuffledInitials[0..1]
+    $shuffledInitials = $shuffledInitials[2..($shuffledInitials.Count-1)]
+    $assignedText = ($assigned -join " & ")
+
     $assignments += [PSCustomObject]@{
       Date     = $dateUK
       Title    = $meeting.title
