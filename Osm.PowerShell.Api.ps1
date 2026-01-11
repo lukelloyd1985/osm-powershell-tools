@@ -16,7 +16,6 @@ $accountPreferences = "https://www.onlinescoutmanager.co.uk/v3/settings/account_
 $printRegisterUrl = "https://www.onlinescoutmanager.co.uk/ext/members/attendance/?action=printRegister&mode=future"
 $programmeAddMeetingUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/?action=addMeeting"
 $programmeShareUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/share/?action=share"
-$programmeShareGetUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/share/?action=get"
 $programmeShareAcceptUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/share/?action=accept"
 
 # Functions
