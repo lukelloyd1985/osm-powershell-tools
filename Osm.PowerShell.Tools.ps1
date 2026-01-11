@@ -234,13 +234,13 @@ function Copy-OsmMeetings {
   Write-Output "Target Section First Meeting Date: $($toFirstMeetingDate.ToString('dd-MM-yyyy'))"
 
   # Copy meetings
-  Invoke-OsmApi -url $programmeShareUrl -Method "GET"
+  $share = Invoke-OsmApi -url $programmeShareUrl -Method "GET"
   $body = @{
     startdate = $toFirstMeetingDate.ToString('yyyy-MM-dd')
     starttime = $null
     endtime   = $null
   }
-  Invoke-OsmApi -url $programmeShareAcceptUrl -Method "POST" -Body $body
+  $shareAccept = Invoke-OsmApi -url $programmeShareAcceptUrl -Method "POST" -Body $body
   Write-Output "✅ Meetings copied for $fromTermName"
 }
 
