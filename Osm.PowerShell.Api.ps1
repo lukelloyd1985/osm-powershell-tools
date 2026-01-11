@@ -15,6 +15,8 @@ $programmeSummaryUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/?acti
 $accountPreferences = "https://www.onlinescoutmanager.co.uk/v3/settings/account_preferences"
 $printRegisterUrl = "https://www.onlinescoutmanager.co.uk/ext/members/attendance/?action=printRegister&mode=future"
 $programmeAddMeetingUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/?action=addMeeting"
+$programmeShareUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/share/?action=share"
+$programmeShareAcceptUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/share/?action=accept"
 
 # Functions
 function Request-Credentials {
