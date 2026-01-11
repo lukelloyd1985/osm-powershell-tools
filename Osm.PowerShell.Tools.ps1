@@ -90,7 +90,7 @@ function New-OsmParentRota {
   }
 
   # Output rota
-  $assignments | Format-Table -AutoSize
+  Write-Output $assignments | Format-Table -AutoSize
   $htmlParams = @{
     Head = $htmlStyle
     Title = "$sectionName Parent Rota"
@@ -129,10 +129,61 @@ function Get-OsmPaperRegister {
 
   # Download register
   Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
+  Write-Output "✅ Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
 
   if ($print) {
     Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
   }
+}
+function New-OsmMeetings {
+  param (
+    [int]$sectionId,
+    [ValidateSet("mon", "tue", "wed", "thu", "fri")]
+    [string]$day
+  )
+
+  if ($sections.sectionId -notcontains $sectionId) {
+    Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
+  }
+
+  if (!$day) {
+    Write-Error "❌ Provide day of week for meetings" -ErrorAction Stop
+  }
+
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $termName = $section.termName
+  $thisTerm = $terms.$sectionId | Where-Object { $_.termid -eq $termId }
+  $termStartDate = [datetime]$thisTerm.startdate
+  $termEndDate = [datetime]$thisTerm.enddate
+  $termStartDay = $termStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3)
+
+  # Get the first occurrence of $day from $termStartDate for $firstMeetingDate
+  $days = @("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+  $dayIndex = $days.IndexOf($day)
+  $termIndex = $days.IndexOf($termStartDay)
+  $daysToAdd = ($dayIndex - $termIndex + 7) % 7
+  if ($daysToAdd -eq 0 -and $termStartDay -ne $day) {
+    $daysToAdd = 7
+  }
+  $firstMeetingDate = $termStartDate.AddDays($daysToAdd)
+
+  Write-Output "Term Start Date: $($termStartDate.ToString('dd-MM-yyyy'))"
+  Write-Output "Term End Date: $($termEndDate.ToString('dd-MM-yyyy'))"
+  Write-Output "Term Start Day: $termStartDay"
+  Write-Output "Selected Day: $day"
+  Write-Output "First Meeting Date: $($firstMeetingDate.ToString('dd-MM-yyyy'))"
+
+  # Create meetings
+  $body = @{
+    sectionid = $sectionId
+    title     = "Planning..."
+    start     = $firstMeetingDate.ToString('yyyy-MM-dd')
+    end       = $termEndDate.ToString('yyyy-MM-dd')
+    repeat    = 7
+  }
+  $meetings = Invoke-OsmApi -url $programmeAddMeetingUrl -Method "POST" -Body $body
+  Write-Output "✅ Meetings created for $termName"
 }
 
 # Main

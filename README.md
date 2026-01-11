@@ -42,6 +42,12 @@ Used to get a paper register for the current term for the provided section. Regi
 `Get-OsmPaperRegister -sectionId xxxxx` or `Get-OsmPaperRegister -sectionId xxxxx -order firstname` or 
 `Get-OsmPaperRegister -sectionId xxxxx -print` or `Get-OsmPaperRegister -sectionId xxxxx -order firstname -print`
 
+#### New-OsmMeetings
+
+Used to create meetings for the current term for the provided section.
+
+`New-OsmMeetings -sectionId xxxxx -day xxxxx` or `New-OsmMeetings -sectionId xxxxx -day mon`
+
 ## Contributions
 
 If you find any issues or would like additional features then please open a GitHub issue providing as much detail as possible.
