@@ -48,6 +48,12 @@ Used to create meetings for the current term for the provided section.
 
 `New-OsmMeetings -sectionId xxxxx -day xxxxx` or `New-OsmMeetings -sectionId xxxxx -day mon`
 
+#### Copy-OsmMeetings
+
+Used to copy meetings from one section to another for the current term.
+
+`Copy-OsmMeetings -fromSectionId xxxxx -toSectionId xxxxx -day xxxxx` or `Copy-OsmMeetings -fromSectionId xxxxx -toSectionId xxxxx -day mon`
+
 ## Contributions
 
 If you find any issues or would like additional features then please open a GitHub issue providing as much detail as possible.
