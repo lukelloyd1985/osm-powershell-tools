@@ -185,6 +185,64 @@ function New-OsmMeetings {
   $meetings = Invoke-OsmApi -url $programmeAddMeetingUrl -Method "POST" -Body $body
   Write-Output "✅ Meetings created for $termName"
 }
+function Copy-OsmMeetings {
+  param (
+    [int]$fromSectionId,
+    [int]$toSectionId,
+    [ValidateSet("mon", "tue", "wed", "thu", "fri")]
+    [string]$day
+  )
+
+  if ($sections.sectionId -notcontains $fromSectionId) {
+    Write-Error "❌ Not a valid fromSectionId" -ErrorAction Stop
+  }
+
+  if ($sections.sectionId -notcontains $toSectionId) {
+    Write-Error "❌ Not a valid toSectionId" -ErrorAction Stop
+  }
+
+  if (!$day) {
+    Write-Error "❌ Provide day of week for meetings" -ErrorAction Stop
+  }
+
+  $fromSection = $sections | Where-Object { $_.sectionId -eq $fromSectionId }
+  $fromSectionName = $fromSection.sectionName
+  $fromTermId = $fromSection.termId
+  $fromTermName = $fromSection.termName
+  $toSection = $sections | Where-Object { $_.sectionId -eq $toSectionId }
+  $toSectionName = $toSection.sectionName
+  $toTermId = $toSection.termId
+  $toThisTerm = $terms.$toSectionId | Where-Object { $_.termid -eq $toTermId }
+  $toTermStartDate = [datetime]$toThisTerm.startdate
+  $toTermStartDay = $toTermStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3)
+  $programmeShareUrl = $programmeShareUrl + "&sectionid=$fromSectionId&termid=$fromTermId&target=$toSectionId"
+  $programmeShareAcceptUrl = $programmeShareAcceptUrl + "&sectionid=$toSectionId"
+
+  # Get the first occurrence of $day from $toTermStartDate for $toFirstMeetingDate
+  $days = @("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+  $dayIndex = $days.IndexOf($day)
+  $toTermIndex = $days.IndexOf($toTermStartDay)
+  $daysToAdd = ($dayIndex - $toTermIndex + 7) % 7
+  if ($daysToAdd -eq 0 -and $toTermStartDay -ne $day) {
+    $daysToAdd = 7
+  }
+  $toFirstMeetingDate = $toTermStartDate.AddDays($daysToAdd)
+
+  Write-Output "Source Section Name: $fromSectionName"
+  Write-Output "Target Section Name: $toSectionName"
+  Write-Output "Selected Day: $day"
+  Write-Output "Target Section First Meeting Date: $($toFirstMeetingDate.ToString('dd-MM-yyyy'))"
+
+  # Copy meetings
+  $share = Invoke-OsmApi -url $programmeShareUrl -Method "GET"
+  $body = @{
+    startdate = $toFirstMeetingDate.ToString('yyyy-MM-dd')
+    starttime = $null
+    endtime   = $null
+  }
+  $shareAccept = Invoke-OsmApi -url $programmeShareAcceptUrl -Method "POST" -Body $body
+  Write-Output "✅ Meetings copied for $fromTermName"
+}
 
 # Main
 $sections = @()
