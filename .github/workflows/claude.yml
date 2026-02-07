@@ -35,11 +35,10 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          # Optional: Trigger when specific user is assigned to an issue
-          assignee_trigger: "claude-bot"
-
-          # Optional: Configure Claude's behavior with CLI arguments
+          base_branch: "main"
+          assignee_trigger: "claude-bot" #username that triggers the action when assigned to an issue
+          label_trigger: "claude" #label that triggers the action when applied to an issue
+          branch_prefix: "claude-"
           claude_args: |
             --model claude-sonnet-4-5-20250929
             --max-turns 5
