@@ -37,7 +37,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           base_branch: "main"
           assignee_trigger: "claude-bot" #username that triggers the action when assigned to an issue
-          label_trigger: "claude" #label that triggers the action when applied to an issue
+          label_trigger: "claude-bot" #label that triggers the action when applied to an issue
           branch_prefix: "claude-"
           claude_args: |
             --model claude-sonnet-4-5-20250929
