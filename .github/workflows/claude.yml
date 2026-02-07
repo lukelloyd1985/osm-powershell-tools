@@ -3,20 +3,21 @@ name: Claude Code
 on:
   issue_comment:
     types: [created]
+  issues:
+    types: [labeled]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened, assigned]
   pull_request_review:
     types: [submitted]
 
 jobs:
   claude:
     if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'claude') ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,8 +37,6 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           base_branch: "main"
-          assignee_trigger: "claude-bot" #username that triggers the action when assigned to an issue
-          label_trigger: "claude-bot" #label that triggers the action when applied to an issue
           branch_prefix: "claude-"
           claude_args: |
             --model claude-sonnet-4-5-20250929
