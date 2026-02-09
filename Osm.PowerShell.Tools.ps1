@@ -103,7 +103,7 @@ function New-OsmParentRota {
   $assignments | ConvertTo-Html @htmlParams | Out-File $downloadsPath\parent_rota_$sectionNameFile.html
 
   if ($print) {
-    Get-Content $downloadsPath\parent_rota_$sectionNameFile.html | Out-Printer
+    Out-Printer -Name "$downloadsPath\parent_rota_$sectionNameFile.html"
   }
 }
 function Get-OsmPaperRegister {
@@ -136,7 +136,7 @@ function Get-OsmPaperRegister {
   Write-Output "✅ Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
 
   if ($print) {
-    Get-Content $downloadsPath\paper_register_$sectionNameFile.pdf | Out-Printer
+    Out-Printer -Name "$downloadsPath\paper_register_$sectionNameFile.pdf"
   }
 }
 function New-OsmMeetings {
