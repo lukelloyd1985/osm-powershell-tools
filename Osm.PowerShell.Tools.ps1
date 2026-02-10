@@ -98,10 +98,12 @@ function New-OsmParentRota {
   $termName = $section.termName
   $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
-  
+
   # Members
+  Write-Host "🔄 Fetching member list from OSM..."
   $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
   $membersList = (Invoke-OsmApi -url $membersListUrl).items
+  Write-Host "✅ Retrieved $($membersList.Count) members"
   $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt -ErrorAction SilentlyContinue
   $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $leadersSurnames -notcontains $_.lastname -and $_.patrolid -gt 0 }
@@ -118,9 +120,11 @@ function New-OsmParentRota {
   }
 
   # Programme
+  Write-Host "🔄 Fetching programme summary from OSM..."
   $programmeSummaryUrl = $programmeSummaryUrl + "&sectionid=$sectionId&termid=$termId"
   $programmeSummary = (Invoke-OsmApi -url $programmeSummaryUrl).items
   $futureMeetings = $programmeSummary | Where-Object { [datetime]$_.meetingdate -gt (Get-Date) }
+  Write-Host "✅ Found $($futureMeetings.Count) future meetings"
 
   # Randomly assign 2 members initials per meeting (with no re-use, replenishing when empty)
   $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
@@ -176,6 +180,7 @@ function Get-OsmPaperRegister {
   $printRegisterUrl = $printRegisterUrl + "&sectionid=$sectionId&termid=$termId"
 
   # Set site preferences
+  Write-Host "🔄 Setting register sort preferences..."
   $body = @{
     preference = "sort"
     value      = $order
@@ -183,6 +188,7 @@ function Get-OsmPaperRegister {
   $sortOrder = Invoke-OsmApi -url $accountPreferences -Method "POST" -Body $body
 
   # Download register
+  Write-Host "🔄 Downloading register PDF..."
   Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
   Write-Output "✅ Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
 
@@ -221,6 +227,7 @@ function New-OsmMeetings {
   Write-Output "First Meeting Date: $($firstMeetingDate.ToString('dd-MM-yyyy'))"
 
   # Create meetings
+  Write-Host "🔄 Creating meetings in OSM..."
   $body = @{
     sectionid = $sectionId
     title     = "Planning..."
@@ -268,7 +275,9 @@ function Copy-OsmMeetings {
   Write-Output "Target Section First Meeting Date: $($toFirstMeetingDate.ToString('dd-MM-yyyy'))"
 
   # Copy meetings
+  Write-Host "🔄 Sharing programme from source section..."
   $share = Invoke-OsmApi -url $programmeShareUrl -Method "GET"
+  Write-Host "🔄 Accepting shared programme in target section..."
   $body = @{
     startdate = $toFirstMeetingDate.ToString('yyyy-MM-dd')
     starttime = $null
