@@ -4,7 +4,9 @@
 
 # Settings
 $osmAppPath = "$env:LOCALAPPDATA\osm-powershell-tools"
-New-Item -Path $osmAppPath -ItemType Directory -Force | Out-Null
+if (-not (Test-Path $osmAppPath)) {
+  New-Item -Path $osmAppPath -ItemType Directory | Out-Null
+}
 $credentialsFile = "$osmAppPath\osm_credentials.json"
 $tokenFile = "$osmAppPath\osm_token.json"
 $tokenUrl = "https://www.onlinescoutmanager.co.uk/oauth/token"
