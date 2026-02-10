@@ -84,6 +84,29 @@ function Assert-ValidSection {
   }
 }
 
+function Add-QueryParams {
+  <#
+  .SYNOPSIS
+  Appends query parameters to a URL.
+
+  .PARAMETER url
+  The base URL to append parameters to.
+
+  .PARAMETER params
+  A hashtable of parameter names and values.
+
+  .OUTPUTS
+  String - The URL with appended parameters.
+  #>
+  param(
+    [string]$url,
+    [hashtable]$params
+  )
+
+  $queryString = ($params.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join "&"
+  return "$url&$queryString"
+}
+
 # Functions
 function New-OsmParentRota {
   <#
@@ -122,8 +145,11 @@ function New-OsmParentRota {
 
   # Members
   Write-Host "🔄 Fetching member list from OSM..."
-  $membersListUrl = $membersListUrl + "&sectionid=$sectionId&termid=$termId"
-  $membersList = (Invoke-OsmApi -url $membersListUrl).items
+  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
+  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
   Write-Host "✅ Retrieved $($membersList.Count) members"
   $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt -ErrorAction SilentlyContinue
   $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
@@ -142,8 +168,11 @@ function New-OsmParentRota {
 
   # Programme
   Write-Host "🔄 Fetching programme summary from OSM..."
-  $programmeSummaryUrl = $programmeSummaryUrl + "&sectionid=$sectionId&termid=$termId"
-  $programmeSummary = (Invoke-OsmApi -url $programmeSummaryUrl).items
+  $programmeSummaryUrlWithParams = Add-QueryParams -url $programmeSummaryUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
+  $programmeSummary = (Invoke-OsmApi -url $programmeSummaryUrlWithParams).items
   $futureMeetings = $programmeSummary | Where-Object { [datetime]$_.meetingdate -gt (Get-Date) }
   Write-Host "✅ Found $($futureMeetings.Count) future meetings"
 
@@ -226,7 +255,10 @@ function Get-OsmPaperRegister {
   $termId = $section.termId
   $sectionName = $section.sectionName
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
-  $printRegisterUrl = $printRegisterUrl + "&sectionid=$sectionId&termid=$termId"
+  $printRegisterUrlWithParams = Add-QueryParams -url $printRegisterUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
 
   # Set site preferences
   Write-Host "🔄 Setting register sort preferences..."
@@ -239,7 +271,7 @@ function Get-OsmPaperRegister {
   # Download register
   Write-Host "🔄 Downloading register PDF..."
   $outputFile = "$downloadsPath\paper_register_$sectionNameFile.pdf"
-  Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file $outputFile
+  Invoke-OsmApi -url $printRegisterUrlWithParams -method "DOWNLOAD" -file $outputFile
 
   if ($print) {
     Out-Printer -Name $outputFile
@@ -374,8 +406,14 @@ function Copy-OsmMeetings {
   $toThisTerm = $terms.$toSectionId | Where-Object { $_.termid -eq $toTermId }
   $toTermStartDate = [datetime]$toThisTerm.startdate
   $toTermStartDay = $toTermStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3)
-  $programmeShareUrl = $programmeShareUrl + "&sectionid=$fromSectionId&termid=$fromTermId&target=$toSectionId"
-  $programmeShareAcceptUrl = $programmeShareAcceptUrl + "&sectionid=$toSectionId"
+  $programmeShareUrlWithParams = Add-QueryParams -url $programmeShareUrl -params @{
+    sectionid = $fromSectionId
+    termid = $fromTermId
+    target = $toSectionId
+  }
+  $programmeShareAcceptUrlWithParams = Add-QueryParams -url $programmeShareAcceptUrl -params @{
+    sectionid = $toSectionId
+  }
 
   # Get the first occurrence of $day from $toTermStartDate for $toFirstMeetingDate
   $toFirstMeetingDate = Get-FirstMeetingDate -termStartDate $toTermStartDate -day $day
@@ -387,14 +425,14 @@ function Copy-OsmMeetings {
 
   # Copy meetings
   Write-Host "🔄 Sharing programme from source section..."
-  $share = Invoke-OsmApi -url $programmeShareUrl -Method "GET"
+  $share = Invoke-OsmApi -url $programmeShareUrlWithParams -Method "GET"
   Write-Host "🔄 Accepting shared programme in target section..."
   $body = @{
     startdate = $toFirstMeetingDate.ToString('yyyy-MM-dd')
     starttime = $null
     endtime   = $null
   }
-  $shareAccept = Invoke-OsmApi -url $programmeShareAcceptUrl -Method "POST" -Body $body
+  $shareAccept = Invoke-OsmApi -url $programmeShareAcceptUrlWithParams -Method "POST" -Body $body
   Write-Host "✅ Meetings copied for $fromTermName"
 
   return [PSCustomObject]@{
