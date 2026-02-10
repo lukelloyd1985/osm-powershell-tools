@@ -172,17 +172,20 @@ function New-OsmParentRota {
   }
 
   # Output rota
-  Write-Output $assignments | Format-Table -AutoSize
   $htmlParams = @{
     Head = $htmlStyle
     Title = "$sectionName Parent Rota"
     PreContent = "<h1>$sectionName parent rota for $termName</h1>"
   }
-  $assignments | ConvertTo-Html @htmlParams | Out-File $downloadsPath\parent_rota_$sectionNameFile.html
+  $outputFile = "$downloadsPath\parent_rota_$sectionNameFile.html"
+  $assignments | ConvertTo-Html @htmlParams | Out-File $outputFile
 
   if ($print) {
-    Out-Printer -Name "$downloadsPath\parent_rota_$sectionNameFile.html"
+    Out-Printer -Name $outputFile
   }
+
+  Write-Host "✅ Parent rota saved to $outputFile"
+  return $assignments
 }
 function Get-OsmPaperRegister {
   <#
@@ -235,11 +238,18 @@ function Get-OsmPaperRegister {
 
   # Download register
   Write-Host "🔄 Downloading register PDF..."
-  Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file "$downloadsPath\paper_register_$sectionNameFile.pdf"
-  Write-Output "✅ Register downloaded to $downloadsPath\paper_register_$sectionNameFile.pdf"
+  $outputFile = "$downloadsPath\paper_register_$sectionNameFile.pdf"
+  Invoke-OsmApi -url $printRegisterUrl -method "DOWNLOAD" -file $outputFile
 
   if ($print) {
-    Out-Printer -Name "$downloadsPath\paper_register_$sectionNameFile.pdf"
+    Out-Printer -Name $outputFile
+  }
+
+  Write-Host "✅ Register downloaded to $outputFile"
+  return [PSCustomObject]@{
+    FilePath = $outputFile
+    SectionName = $sectionName
+    SortOrder = $order
   }
 }
 function New-OsmMeetings {
@@ -303,7 +313,16 @@ function New-OsmMeetings {
     repeat    = 7
   }
   $meetings = Invoke-OsmApi -url $programmeAddMeetingUrl -Method "POST" -Body $body
-  Write-Output "✅ Meetings created for $termName"
+  Write-Host "✅ Meetings created for $termName"
+
+  return [PSCustomObject]@{
+    SectionName = $section.sectionName
+    TermName = $termName
+    Day = $day
+    FirstMeetingDate = $firstMeetingDate
+    TermEndDate = $termEndDate
+    MeetingsCreated = $meetings
+  }
 }
 function Copy-OsmMeetings {
   <#
@@ -376,7 +395,16 @@ function Copy-OsmMeetings {
     endtime   = $null
   }
   $shareAccept = Invoke-OsmApi -url $programmeShareAcceptUrl -Method "POST" -Body $body
-  Write-Output "✅ Meetings copied for $fromTermName"
+  Write-Host "✅ Meetings copied for $fromTermName"
+
+  return [PSCustomObject]@{
+    FromSection = $fromSectionName
+    ToSection = $toSectionName
+    TermName = $fromTermName
+    Day = $day
+    FirstMeetingDate = $toFirstMeetingDate
+    ShareResult = $shareAccept
+  }
 }
 
 # Main
