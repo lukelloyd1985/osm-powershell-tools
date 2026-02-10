@@ -29,6 +29,36 @@ th {
 # Import OSM API
 Import-Module .\Osm.PowerShell.Api.ps1
 
+# Helper Functions
+function Get-FirstMeetingDate {
+  <#
+  .SYNOPSIS
+  Calculates the first meeting date for a given day of week from a term start date.
+
+  .PARAMETER termStartDate
+  The start date of the term.
+
+  .PARAMETER day
+  The three-letter day abbreviation (mon, tue, wed, thu, fri, sat, sun).
+
+  .OUTPUTS
+  DateTime - The first meeting date.
+  #>
+  param(
+    [datetime]$termStartDate,
+    [string]$day
+  )
+
+  $days = @("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+  $dayIndex = $days.IndexOf($day)
+  $termIndex = $days.IndexOf($termStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3))
+  $daysToAdd = ($dayIndex - $termIndex + 7) % 7
+  if ($daysToAdd -eq 0 -and $termStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3) -ne $day) {
+    $daysToAdd = 7
+  }
+  return $termStartDate.AddDays($daysToAdd)
+}
+
 # Functions
 function New-OsmParentRota {
   param (
@@ -163,14 +193,7 @@ function New-OsmMeetings {
   $termStartDay = $termStartDate.DayOfWeek.ToString().ToLower().Substring(0, 3)
 
   # Get the first occurrence of $day from $termStartDate for $firstMeetingDate
-  $days = @("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-  $dayIndex = $days.IndexOf($day)
-  $termIndex = $days.IndexOf($termStartDay)
-  $daysToAdd = ($dayIndex - $termIndex + 7) % 7
-  if ($daysToAdd -eq 0 -and $termStartDay -ne $day) {
-    $daysToAdd = 7
-  }
-  $firstMeetingDate = $termStartDate.AddDays($daysToAdd)
+  $firstMeetingDate = Get-FirstMeetingDate -termStartDate $termStartDate -day $day
 
   Write-Output "Term Start Date: $($termStartDate.ToString('dd-MM-yyyy'))"
   Write-Output "Term End Date: $($termEndDate.ToString('dd-MM-yyyy'))"
@@ -223,14 +246,7 @@ function Copy-OsmMeetings {
   $programmeShareAcceptUrl = $programmeShareAcceptUrl + "&sectionid=$toSectionId"
 
   # Get the first occurrence of $day from $toTermStartDate for $toFirstMeetingDate
-  $days = @("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-  $dayIndex = $days.IndexOf($day)
-  $toTermIndex = $days.IndexOf($toTermStartDay)
-  $daysToAdd = ($dayIndex - $toTermIndex + 7) % 7
-  if ($daysToAdd -eq 0 -and $toTermStartDay -ne $day) {
-    $daysToAdd = 7
-  }
-  $toFirstMeetingDate = $toTermStartDate.AddDays($daysToAdd)
+  $toFirstMeetingDate = Get-FirstMeetingDate -termStartDate $toTermStartDate -day $day
 
   Write-Output "Source Section Name: $fromSectionName"
   Write-Output "Target Section Name: $toSectionName"
