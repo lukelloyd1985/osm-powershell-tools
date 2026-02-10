@@ -86,6 +86,27 @@ function Assert-ValidSection {
 
 # Functions
 function New-OsmParentRota {
+  <#
+  .SYNOPSIS
+  Creates a parent rota for section meetings.
+
+  .DESCRIPTION
+  Generates a randomized parent rota assigning two parents per future meeting.
+  The rota excludes leaders and members in the exclusion file. Output is saved
+  as an HTML file in the Downloads folder and optionally sent to a printer.
+
+  .PARAMETER sectionId
+  The OSM section ID to generate the rota for.
+
+  .PARAMETER print
+  Optional switch to send the output directly to the default printer.
+
+  .EXAMPLE
+  New-OsmParentRota -sectionId 12345
+
+  .EXAMPLE
+  New-OsmParentRota -sectionId 12345 -print
+  #>
   param (
     [int]$sectionId,
     [switch]$print
@@ -164,6 +185,31 @@ function New-OsmParentRota {
   }
 }
 function Get-OsmPaperRegister {
+  <#
+  .SYNOPSIS
+  Downloads a paper register PDF from OSM.
+
+  .DESCRIPTION
+  Downloads a paper register for future meetings from Online Scout Manager.
+  The register is saved as a PDF in the Downloads folder and can optionally
+  be sent to the default printer. The sort order can be customized.
+
+  .PARAMETER sectionId
+  The OSM section ID to download the register for.
+
+  .PARAMETER order
+  The sort order for the register. Valid values: firstname, lastname, dob, patrolid.
+  Default is patrolid.
+
+  .PARAMETER print
+  Optional switch to send the PDF directly to the default printer.
+
+  .EXAMPLE
+  Get-OsmPaperRegister -sectionId 12345
+
+  .EXAMPLE
+  Get-OsmPaperRegister -sectionId 12345 -order lastname -print
+  #>
   param (
     [int]$sectionId,
     [ValidateSet("firstname", "lastname", "dob", "patrolid")]
@@ -197,6 +243,27 @@ function Get-OsmPaperRegister {
   }
 }
 function New-OsmMeetings {
+  <#
+  .SYNOPSIS
+  Creates weekly meetings for a section's current term.
+
+  .DESCRIPTION
+  Creates a series of weekly meetings in OSM starting from the first occurrence
+  of the specified day of week within the term, and repeating weekly until the
+  term end date. All meetings are initially created with the title "Planning...".
+
+  .PARAMETER sectionId
+  The OSM section ID to create meetings for.
+
+  .PARAMETER day
+  The three-letter day abbreviation for meetings. Valid values: mon, tue, wed, thu, fri.
+
+  .EXAMPLE
+  New-OsmMeetings -sectionId 12345 -day tue
+
+  .EXAMPLE
+  New-OsmMeetings -sectionId 12345 -day fri
+  #>
   param (
     [int]$sectionId,
     [ValidateSet("mon", "tue", "wed", "thu", "fri")]
@@ -239,6 +306,31 @@ function New-OsmMeetings {
   Write-Output "✅ Meetings created for $termName"
 }
 function Copy-OsmMeetings {
+  <#
+  .SYNOPSIS
+  Copies meetings from one section to another section.
+
+  .DESCRIPTION
+  Shares the programme from a source section and accepts it into a target section.
+  The meetings are scheduled starting from the first occurrence of the specified
+  day of week in the target section's term.
+
+  .PARAMETER fromSectionId
+  The OSM section ID to copy meetings from (source section).
+
+  .PARAMETER toSectionId
+  The OSM section ID to copy meetings to (target section).
+
+  .PARAMETER day
+  The three-letter day abbreviation for meetings in the target section.
+  Valid values: mon, tue, wed, thu, fri.
+
+  .EXAMPLE
+  Copy-OsmMeetings -fromSectionId 12345 -toSectionId 67890 -day wed
+
+  .EXAMPLE
+  Copy-OsmMeetings -fromSectionId 12345 -toSectionId 67890 -day thu
+  #>
   param (
     [int]$fromSectionId,
     [int]$toSectionId,
