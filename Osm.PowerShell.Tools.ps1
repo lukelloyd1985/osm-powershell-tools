@@ -142,7 +142,16 @@ function New-OsmParentRota {
   }
   $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
   Write-Host "✅ Retrieved $($membersList.Count) members"
-  $excludeMembers = Get-Content $downloadsPath\exclude_$sectionNameFile.txt -ErrorAction SilentlyContinue
+
+  # Check for exclusion file and provide guidance if missing
+  $excludeFile = "$downloadsPath\exclude_$sectionNameFile.txt"
+  if (Test-Path $excludeFile) {
+    $excludeMembers = Get-Content $excludeFile
+    Write-Host "ℹ️  Loaded exclusion file with $($excludeMembers.Count) excluded surnames"
+  } else {
+    Write-Host "ℹ️  No exclusion file found. Create $excludeFile to exclude members from rota."
+    $excludeMembers = @()
+  }
   $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $leadersSurnames -notcontains $_.lastname -and $_.patrolid -gt 0 }
   $initials = foreach ($member in $filteredMembers) {
