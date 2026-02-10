@@ -59,16 +59,39 @@ function Get-FirstMeetingDate {
   return $termStartDate.AddDays($daysToAdd)
 }
 
+function Assert-ValidSection {
+  <#
+  .SYNOPSIS
+  Validates that a section ID exists in the available sections.
+
+  .PARAMETER sectionId
+  The section ID to validate.
+
+  .PARAMETER paramName
+  Optional parameter name to include in error message (default: "sectionId").
+
+  .OUTPUTS
+  None - Throws an error if validation fails.
+  #>
+  param(
+    [int]$sectionId,
+    [string]$paramName = "sectionId"
+  )
+
+  if ($sections.sectionId -notcontains $sectionId) {
+    $validIds = ($sections | ForEach-Object { "$($_.sectionId) ($($_.sectionName))" }) -join ", "
+    Write-Error "❌ Not a valid $paramName. Valid options: $validIds" -ErrorAction Stop
+  }
+}
+
 # Functions
 function New-OsmParentRota {
   param (
     [int]$sectionId,
     [switch]$print
   )
-  
-  if ($sections.sectionId -notcontains $sectionId) {
-    Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
-  }
+
+  Assert-ValidSection -sectionId $sectionId
   
   $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
   $termId = $section.termId
@@ -143,10 +166,8 @@ function Get-OsmPaperRegister {
     [string]$order = "patrolid",
     [switch]$print
   )
-  
-  if ($sections.sectionId -notcontains $sectionId) {
-    Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
-  }
+
+  Assert-ValidSection -sectionId $sectionId
   
   $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
   $termId = $section.termId
@@ -176,9 +197,7 @@ function New-OsmMeetings {
     [string]$day
   )
 
-  if ($sections.sectionId -notcontains $sectionId) {
-    Write-Error "❌ Not a valid sectionId" -ErrorAction Stop
-  }
+  Assert-ValidSection -sectionId $sectionId
 
   if (!$day) {
     Write-Error "❌ Provide day of week for meetings" -ErrorAction Stop
@@ -220,13 +239,8 @@ function Copy-OsmMeetings {
     [string]$day
   )
 
-  if ($sections.sectionId -notcontains $fromSectionId) {
-    Write-Error "❌ Not a valid fromSectionId" -ErrorAction Stop
-  }
-
-  if ($sections.sectionId -notcontains $toSectionId) {
-    Write-Error "❌ Not a valid toSectionId" -ErrorAction Stop
-  }
+  Assert-ValidSection -sectionId $fromSectionId -paramName "fromSectionId"
+  Assert-ValidSection -sectionId $toSectionId -paramName "toSectionId"
 
   if (!$day) {
     Write-Error "❌ Provide day of week for meetings" -ErrorAction Stop
