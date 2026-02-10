@@ -170,7 +170,6 @@ function New-OsmParentRota {
   # Randomly assign 2 members initials per meeting (with no re-use, replenishing when empty)
   $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
   $assignments = @()
-  $index = 0
   foreach ($meeting in $futureMeetings) {
     $dateUK = (Get-Date $meeting.meetingdate -Format "dd-MM-yyyy")
 
@@ -179,8 +178,19 @@ function New-OsmParentRota {
       $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
     }
 
-    $assigned = $shuffledInitials[0..1]
-    $shuffledInitials = $shuffledInitials[2..($shuffledInitials.Count-1)]
+    # Safely extract assignments
+    if ($shuffledInitials.Count -ge 2) {
+      $assigned = $shuffledInitials[0..1]
+      if ($shuffledInitials.Count -gt 2) {
+        $shuffledInitials = $shuffledInitials[2..($shuffledInitials.Count-1)]
+      } else {
+        $shuffledInitials = @()
+      }
+    } else {
+      # Handle edge case with fewer than 2 members
+      $assigned = $shuffledInitials
+      $shuffledInitials = @()
+    }
     $assignedText = ($assigned -join " & ")
 
     $assignments += [PSCustomObject]@{
@@ -188,7 +198,6 @@ function New-OsmParentRota {
       Title    = $meeting.title
       Assigned = $assignedText
     }
-    $index++
   }
 
   # Output rota
