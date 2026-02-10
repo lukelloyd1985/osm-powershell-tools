@@ -408,19 +408,26 @@ function Copy-OsmMeetings {
 }
 
 # Main
-$sections = @()
-$terms = Invoke-OsmApi -url $termsUrl
-$userRoles = Invoke-OsmApi -url $userRolesUrl
-$userRoles | ForEach-Object {
-  $sectionId = $_.sectionid
-  $sectionName = $_.sectionname
-  $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) -and $_.past -eq "False" }
-  $sections += [PSCustomObject]@{
-    sectionId   = $sectionId
-    sectionName = $sectionName
-    termId      = $thisTerm.termid
-    termName    = $thisTerm.name
+try {
+  $sections = @()
+  $terms = Invoke-OsmApi -url $termsUrl
+  $userRoles = Invoke-OsmApi -url $userRolesUrl
+  $userRoles | ForEach-Object {
+    $sectionId = $_.sectionid
+    $sectionName = $_.sectionname
+    $thisTerm = $terms.$sectionId | Where-Object { (Get-Date $_.enddate) -gt (Get-Date) -and $_.past -eq "False" }
+    $sections += [PSCustomObject]@{
+      sectionId   = $sectionId
+      sectionName = $sectionName
+      termId      = $thisTerm.termid
+      termName    = $thisTerm.name
+    }
   }
-}
 
-Write-Output $sections | Format-Table -AutoSize
+  Write-Output $sections | Format-Table -AutoSize
+}
+catch {
+  Write-Warning "⚠️ Failed to initialize OSM Tools: $($_.Exception.Message)"
+  Write-Warning "This may be due to missing/invalid credentials or network issues."
+  Write-Warning "Please check your credentials with Export-OsmCredentials or verify network connectivity."
+}
