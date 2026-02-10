@@ -6,25 +6,16 @@
 $shell = New-Object -ComObject Shell.Application
 $downloads = $shell.Namespace('shell:Downloads')
 $downloadsPath = $downloads.Self.Path
-$htmlStyle = @'
-<style>
-table {
-  width: 600px;
-  border-collapse: collapse;
-  border-width: 2px;
-  border-style: solid;
-  border-color: black;
-  color: black;
-  font-size: 24px;
-  text-align: center;
-}
 
-th {
-  background-color: #0000ff;
-  color: white;
+# Load HTML style from external CSS file
+$cssPath = "$PSScriptRoot\default.css"
+if (Test-Path $cssPath) {
+  $cssContent = Get-Content $cssPath -Raw
+  $htmlStyle = "<style>`n$cssContent`n</style>"
+} else {
+  Write-Warning "⚠️ CSS file not found at $cssPath. Using minimal default style."
+  $htmlStyle = "<style>table { border-collapse: collapse; } th { background-color: #0000ff; color: white; }</style>"
 }
-</style>
-'@
 
 # Import OSM API
 Import-Module .\Osm.PowerShell.Api.ps1
