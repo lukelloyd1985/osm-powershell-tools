@@ -4,7 +4,9 @@
 
 # Settings
 $osmAppPath = "$env:LOCALAPPDATA\osm-powershell-tools"
-New-Item -Path $osmAppPath -ItemType Directory -Force | Out-Null
+if (-not (Test-Path $osmAppPath)) {
+  New-Item -Path $osmAppPath -ItemType Directory | Out-Null
+}
 $credentialsFile = "$osmAppPath\osm_credentials.json"
 $tokenFile = "$osmAppPath\osm_token.json"
 $tokenUrl = "https://www.onlinescoutmanager.co.uk/oauth/token"
@@ -112,11 +114,11 @@ function Invoke-OsmApi {
     [string]$file = $null
   )
 
-  if ($url -match "action") {
-    $action = $url.Split("action=")[1].Split("&")[0]
+  if ($url -match "action=([^&]+)") {
+    $action = $Matches[1]
   }
   else {
-    $action = $url.Split("/")[-1]
+    $action = ($url -split "/")[-1]
   }
   Write-Host "✅ Invoking OSM API to $method $action"
   $OsmCredentials = Import-OsmCredentials
