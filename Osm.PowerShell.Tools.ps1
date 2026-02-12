@@ -219,7 +219,7 @@ function New-OsmParentRota {
   $assignments | ConvertTo-Html @htmlParams | Out-File $outputFile
 
   if ($print) {
-    Out-Printer -Name $outputFile
+    Start-Process -FilePath $outputFile -Verb Print
   }
 
   Write-Host "✅ Parent rota saved to $outputFile"
@@ -283,7 +283,7 @@ function Get-OsmPaperRegister {
   Invoke-OsmApi -url $printRegisterUrlWithParams -method "DOWNLOAD" -file $outputFile
 
   if ($print) {
-    Out-Printer -Name $outputFile
+    Start-Process -FilePath $outputFile -Verb Print
   }
 
   Write-Host "✅ Register downloaded to $outputFile"
