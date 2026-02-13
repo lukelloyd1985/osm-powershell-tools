@@ -121,7 +121,6 @@ function Invoke-OsmApi {
   else {
     $action = ($url -split "/")[-1]
   }
-  Write-Host "✅ Invoking OSM API to $method $action"
   $OsmCredentials = Import-OsmCredentials
   $OsmToken = Get-OsmToken -clientId $OsmCredentials.clientId -clientSecret $OsmCredentials.clientSecret
   $headers = @{ Authorization = "Bearer $OsmToken" }
