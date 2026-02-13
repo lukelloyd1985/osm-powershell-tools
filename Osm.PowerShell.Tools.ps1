@@ -611,26 +611,28 @@ function Get-OsmPhotoConsent {
   # Members photograph consent
   Write-Host "🔄 Fetching members photograph consent from OSM..."
   $consents = @()
-  <# commenting out block until worked out memberData API call else will keep getting blocked
   foreach ($member in $membersList) {
     $memberFullName = $member.full_name
     $memberId = $member.scoutid
     $membersDataUrlWithParams = Add-QueryParams -url $membersDataUrl -params @{
-      sectionid = $sectionId
+      section_id = $sectionId
       associated_id = $memberId
       associated_type = "member"
       context = "members"
     }
     $memberData = (Invoke-OsmApi -url $membersDataUrlWithParams).data
     $memberPhotoConsent = (($memberData | where { $_.identifier -eq "consents" }).columns | where { $_.label -eq "Photographs" } | Select varname, value)
+    $memberPhotoInt = ($memberPhotoConsent | where { $_.varname -eq "photographs_internal" }).value
+    $memberPhotoExt = ($memberPhotoConsent | where { $_.varname -eq "photographs_tsa" }).value
 
-    $consents += [PSCustomObject]@{
-      Name      = $memberFullName
-      PhotosInt = "PhotosInt"
-      PhotosExt = "PhotosExt"
+    if ($memberPhotoInt -eq "No" -or $memberPhotoExt -eq "No") {
+      $consents += [PSCustomObject]@{
+        Name      = $memberFullName
+        PhotosInt = $memberPhotoInt
+        PhotosExt = $memberPhotoExt
+      }
     }
   }
-  #>
   Write-Host "✅ Retrieved $($consents.Count) members with no photograph consent"
 
   # Output report
