@@ -98,6 +98,79 @@ function Add-QueryParams {
   return "$url&$queryString"
 }
 
+function ConvertTo-PdfForPrinting {
+  <#
+  .SYNOPSIS
+  Converts an HTML file to PDF using Microsoft Edge or Google Chrome in headless mode.
+
+  .PARAMETER htmlPath
+  The path to the HTML file to convert.
+
+  .PARAMETER pdfPath
+  The path where the PDF should be saved.
+
+  .OUTPUTS
+  String - The path to the generated PDF file.
+  #>
+  param(
+    [string]$htmlPath,
+    [string]$pdfPath
+  )
+
+  Write-Host "🔄 Converting HTML to PDF using Microsoft Edge..."
+
+  # Try Microsoft Edge first
+  $edgePath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+  if (-not (Test-Path $edgePath)) {
+    $edgePath = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+  }
+
+  # Fall back to Google Chrome
+  $chromePath = "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+  if (-not (Test-Path $chromePath)) {
+    $chromePath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+  }
+
+  $browserPath = $null
+  $browserName = $null
+
+  if (Test-Path $edgePath) {
+    $browserPath = $edgePath
+    $browserName = "Microsoft Edge"
+  } elseif (Test-Path $chromePath) {
+    $browserPath = $chromePath
+    $browserName = "Google Chrome"
+  } else {
+    throw "Neither Microsoft Edge nor Google Chrome found. Please install one of these browsers."
+  }
+
+  # Convert HTML to PDF using headless browser
+  # Suppress stderr by redirecting it to null
+  $process = Start-Process -FilePath $browserPath `
+    -ArgumentList "--headless", "--disable-gpu", "--print-to-pdf=`"$pdfPath`"", "`"$htmlPath`"" `
+    -NoNewWindow `
+    -Wait `
+    -PassThru `
+    -RedirectStandardOutput $null `
+    -RedirectStandardError "$env:TEMP\edge-stderr.txt"
+
+  # Clean up stderr temp file
+  if (Test-Path "$env:TEMP\edge-stderr.txt") {
+    Remove-Item "$env:TEMP\edge-stderr.txt" -Force -ErrorAction SilentlyContinue
+  }
+
+  if ($process.ExitCode -ne 0) {
+    throw "Failed to convert HTML to PDF using $browserName (exit code: $($process.ExitCode))"
+  }
+
+  if (-not (Test-Path $pdfPath)) {
+    throw "PDF file was not created at $pdfPath"
+  }
+
+  Write-Host "✅ PDF created successfully"
+  return $pdfPath
+}
+
 # Functions
 function New-OsmParentRota {
   <#
@@ -219,7 +292,26 @@ function New-OsmParentRota {
   $assignments | ConvertTo-Html @htmlParams | Out-File $outputFile
 
   if ($print) {
-    Out-Printer -Name $outputFile
+    try {
+      # Convert HTML to PDF for printing
+      $pdfPath = "$downloadsPath\parent_rota_$sectionNameFile.pdf"
+      ConvertTo-PdfForPrinting -htmlPath $outputFile -pdfPath $pdfPath
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPath -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      Write-Host "✅ Print job sent successfully"
+    } catch {
+      Write-Warning "⚠️ Failed to print: $_"
+    }
   }
 
   Write-Host "✅ Parent rota saved to $outputFile"
@@ -283,7 +375,22 @@ function Get-OsmPaperRegister {
   Invoke-OsmApi -url $printRegisterUrlWithParams -method "DOWNLOAD" -file $outputFile
 
   if ($print) {
-    Out-Printer -Name $outputFile
+    try {
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $outputFile -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      Write-Host "✅ Print job sent successfully"
+    } catch {
+      Write-Warning "⚠️ Failed to print: $_"
+    }
   }
 
   Write-Host "✅ Register downloaded to $outputFile"
