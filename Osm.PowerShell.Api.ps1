@@ -98,7 +98,6 @@ function Get-OsmToken {
   param($clientId, $clientSecret)
   $osmToken = Import-OsmToken -clientId $clientId -clientSecret $clientSecret
   if ((Get-Date) -lt (Get-Date $osmToken.expires_at)) {
-    Write-Host "✅ Using existing valid token."
     return $osmToken.access_token
   }
   else {
