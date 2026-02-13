@@ -54,6 +54,12 @@ Used to copy meetings from one section to another for the current term.
 
 `Copy-OsmMeetings -fromSectionId xxxxx -toSectionId xxxxx -day xxxxx` or `Copy-OsmMeetings -fromSectionId xxxxx -toSectionId xxxxx -day mon`
 
+#### Get-OsmPhotoConsent
+
+Generates a report of members with no photograph consent. Report is saved as an HTML file in the Downloads folder and optionally sent to a printer.
+
+`Get-OsmPhotoConsent -sectionId xxxxx` or `Get-OsmPhotoConsent -sectionId xxxxx -print`
+
 ## Contributions
 
 If you find any issues or would like additional features then please open a GitHub issue providing as much detail as possible.
