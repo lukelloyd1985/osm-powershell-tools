@@ -151,12 +151,17 @@ function ConvertTo-PdfForPrinting {
     -NoNewWindow `
     -Wait `
     -PassThru `
-    -RedirectStandardOutput $null `
+    -RedirectStandardOutput "$env:TEMP\edge-stdout.txt" `
     -RedirectStandardError "$env:TEMP\edge-stderr.txt"
 
   # Clean up stderr temp file
   if (Test-Path "$env:TEMP\edge-stderr.txt") {
     Remove-Item "$env:TEMP\edge-stderr.txt" -Force -ErrorAction SilentlyContinue
+  }
+
+  # Clean up stdout temp file
+  if (Test-Path "$env:TEMP\edge-stdout.txt") {
+    Remove-Item "$env:TEMP\edge-stdout.txt" -Force -ErrorAction SilentlyContinue
   }
 
   if ($process.ExitCode -ne 0) {
