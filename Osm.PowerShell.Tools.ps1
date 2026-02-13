@@ -565,6 +565,95 @@ function Copy-OsmMeetings {
     ShareResult = $shareAccept
   }
 }
+function Get-OsmPhotoConsent {
+  <#
+  .SYNOPSIS
+  Retrieves photograph consent of members from OSM.
+
+  .DESCRIPTION
+  Generates a report of members with no photograph consent.
+  Output is saved as an HTML file in the Downloads folder
+  and optionally sent to a printer.
+
+  .PARAMETER sectionId
+  The OSM section ID to generate the report for.
+
+  .PARAMETER print
+  Optional switch to send the output directly to the default printer.
+
+  .EXAMPLE
+  Get-OsmPhotoConsent -sectionId 12345
+
+  .EXAMPLE
+  Get-OsmPhotoConsent -sectionId 12345 -print
+  #>
+  param (
+    [int]$sectionId,
+    [switch]$print
+  )
+
+  Assert-ValidSection -sectionId $sectionId
+  
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $sectionName = $section.sectionName
+  $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
+
+  # Members
+  Write-Host "🔄 Fetching member list from OSM..."
+  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
+  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
+  Write-Host "✅ Retrieved $($membersList.Count) members"
+
+  # Get members photo consent data
+  $consents = @()
+  foreach ($member in $membersList) {
+
+    $consents += [PSCustomObject]@{
+      Name      = "Name"
+      PhotosInt = "PhotosInt"
+      PhotosExt = "PhotosExt"
+    }
+  }
+
+  # Output report
+  $htmlParams = @{
+    Head = $htmlStyle
+    Title = "$sectionName Photograph Consent"
+    PreContent = "<h1>$sectionName Photograph Consent</h1>"
+  }
+  $outputFile = "$downloadsPath\photograph_consent_$sectionNameFile.html"
+  $consents | ConvertTo-Html @htmlParams | Out-File $outputFile
+
+  if ($print) {
+    try {
+      # Convert HTML to PDF for printing
+      $pdfPath = "$downloadsPath\photograph_consent_$sectionNameFile.pdf"
+      ConvertTo-PdfForPrinting -htmlPath $outputFile -pdfPath $pdfPath
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPath -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      Write-Host "✅ Print job sent successfully"
+    } catch {
+      Write-Warning "⚠️ Failed to print: $_"
+    }
+  }
+
+  Write-Host "✅ Photograph consent report saved to $outputFile"
+  return $consents
+}
 
 # Main
 try {
