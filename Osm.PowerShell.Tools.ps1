@@ -770,14 +770,7 @@ function Get-OsmDietary {
     $memberAllergies = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "allergies" } | Select value)
     $memberDietary = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "dietary" } | Select value)
 
-    $dietaryFullname += [PSCustomObject]@{
-      Name      = $memberFullname
-      Allergies = $memberAllergies
-      Dietary   = $memberDietary
-    }
-
-    <#
-    if ($memberAllergies -ne "N/A" -or $memberAllergies -ne "None" -or $memberDietary -ne "N/A" -or $memberDietary -ne "None") {
+    if ($memberAllergies -ne "N/A" -or $memberAllergies -ne "None" -or $memberAllergies -ne "" -or $memberAllergies -ne "NKDA" -or $memberDietary -ne "N/A" -or $memberDietary -ne "None" -or $memberDietary -ne "") {
       $dietaryFullname += [PSCustomObject]@{
         Name      = $memberFullname
         Allergies = $memberAllergies
@@ -789,7 +782,6 @@ function Get-OsmDietary {
         Dietary   = $memberDietary
       }
     }
-    #>
   }
   Write-Host "✅ Retrieved $($dietaryFullname.Count) members with allergies & dietary requirements"
 
