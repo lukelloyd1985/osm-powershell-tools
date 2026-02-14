@@ -613,9 +613,9 @@ function Get-OsmPhotoConsent {
   $photoConsentFullname = @()
   $photoConsentInitials = @()
   foreach ($member in $membersList) {
-    $memberFullname = $member.full_name
     $fname = $member.firstname
     $lname = $member.lastname
+    $memberFullname = "$fname $lname"
     $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
     if ($lname -match "-") {
       $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
@@ -749,9 +749,9 @@ function Get-OsmDietary {
   $dietaryFullname = @()
   $dietaryInitials = @()
   foreach ($member in $membersList) {
-    $memberFullname = $member.full_name
     $fname = $member.firstname
     $lname = $member.lastname
+    $memberFullname = "$fname $lname"
     $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
     if ($lname -match "-") {
       $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
