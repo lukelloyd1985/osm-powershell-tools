@@ -610,9 +610,19 @@ function Get-OsmPhotoConsent {
 
   # Members photograph consent
   Write-Host "🔄 Fetching members photograph consent from OSM..."
-  $consents = @()
+  $photoConsentFullname = @()
+  $photoConsentInitials = @()
   foreach ($member in $membersList) {
-    $memberFullName = $member.full_name
+    $memberFullname = $member.full_name
+    $fname = $member.firstname
+    $lname = $member.lastname
+    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
+    if ($lname -match "-") {
+      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
+    } else {
+      $linit = $lname[0].ToString().ToUpper()
+    }
+    $memberInitials = "$finit$linit"
     $memberId = $member.scoutid
     $membersDataUrlWithParams = Add-QueryParams -url $membersDataUrl -params @{
       section_id = $sectionId
@@ -626,14 +636,19 @@ function Get-OsmPhotoConsent {
     $memberPhotoExt = ($memberPhotoConsent | where { $_.varname -eq "photographs_tsa" }).value
 
     if ($memberPhotoInt -eq "No" -or $memberPhotoExt -eq "No") {
-      $consents += [PSCustomObject]@{
-        Name      = $memberFullName
+      $photoConsentFullname += [PSCustomObject]@{
+        Name      = $memberFullname
+        PhotosInt = $memberPhotoInt
+        PhotosExt = $memberPhotoExt
+      }
+      $photoConsentInitials += [PSCustomObject]@{
+        Name      = $memberInitials
         PhotosInt = $memberPhotoInt
         PhotosExt = $memberPhotoExt
       }
     }
   }
-  Write-Host "✅ Retrieved $($consents.Count) members with no photograph consent"
+  Write-Host "✅ Retrieved $($photoConsentFullname.Count) members with no photograph consent"
 
   # Output report
   $htmlParams = @{
@@ -641,17 +656,32 @@ function Get-OsmPhotoConsent {
     Title = "$sectionName Photograph Consent"
     PreContent = "<h1>$sectionName Photograph Consent</h1>"
   }
-  $outputFile = "$downloadsPath\photograph_consent_$sectionNameFile.html"
-  $consents | ConvertTo-Html @htmlParams | Out-File $outputFile
+  $outputFileFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.html"
+  $outputFileInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.html"
+  $photoConsentFullname | ConvertTo-Html @htmlParams | Out-File $outputFileFullname
+  $photoConsentInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
 
   if ($print) {
     try {
       # Convert HTML to PDF for printing
-      $pdfPath = "$downloadsPath\photograph_consent_$sectionNameFile.pdf"
-      ConvertTo-PdfForPrinting -htmlPath $outputFile -pdfPath $pdfPath
+      $pdfPathFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.pdf"
+      $pdfPathInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.pdf"
+      ConvertTo-PdfForPrinting -htmlPath $outputFileFullname -pdfPath $pdfPathFullname
+      ConvertTo-PdfForPrinting -htmlPath $outputFileInitials -pdfPath $pdfPathInitials
 
       # Print the PDF using Start-Process with Print verb
-      $printProcess = Start-Process -FilePath $pdfPath -Verb Print -PassThru
+      $printProcess = Start-Process -FilePath $pdfPathFullname -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPathInitials -Verb Print -PassThru
 
       # Wait for print dialog to appear, then close the PDF viewer
       Start-Sleep -Seconds 5
