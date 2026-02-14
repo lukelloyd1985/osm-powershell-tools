@@ -13,6 +13,7 @@ $tokenUrl = "https://www.onlinescoutmanager.co.uk/oauth/token"
 $userRolesUrl = "https://www.onlinescoutmanager.co.uk/api.php?action=getUserRoles"
 $termsUrl = "https://www.onlinescoutmanager.co.uk/api.php?action=getTerms"
 $membersListUrl = "https://www.onlinescoutmanager.co.uk/ext/members/contact/?action=getListOfMembers"
+$membersDataUrl = "https://www.onlinescoutmanager.co.uk/ext/customdata/?action=getData"
 $programmeSummaryUrl = "https://www.onlinescoutmanager.co.uk/ext/programme/?action=getProgrammeSummary"
 $accountPreferences = "https://www.onlinescoutmanager.co.uk/v3/settings/account_preferences"
 $printRegisterUrl = "https://www.onlinescoutmanager.co.uk/ext/members/attendance/?action=printRegister&mode=future"
@@ -81,7 +82,7 @@ function New-OsmToken {
     grant_type    = "client_credentials"
     client_id     = $clientId
     client_secret = $clientSecret
-    scope         = "section:member:read section:programme:write section:event:read section:attendance:read section:administration:write"
+    scope         = "section:member:read section:flexirecord:read section:programme:write section:event:read section:attendance:read section:administration:write"
   }
 
   try {
@@ -97,7 +98,6 @@ function Get-OsmToken {
   param($clientId, $clientSecret)
   $osmToken = Import-OsmToken -clientId $clientId -clientSecret $clientSecret
   if ((Get-Date) -lt (Get-Date $osmToken.expires_at)) {
-    Write-Host "✅ Using existing valid token."
     return $osmToken.access_token
   }
   else {
@@ -120,7 +120,6 @@ function Invoke-OsmApi {
   else {
     $action = ($url -split "/")[-1]
   }
-  Write-Host "✅ Invoking OSM API to $method $action"
   $OsmCredentials = Import-OsmCredentials
   $OsmToken = Get-OsmToken -clientId $OsmCredentials.clientId -clientSecret $OsmCredentials.clientSecret
   $headers = @{ Authorization = "Bearer $OsmToken" }
