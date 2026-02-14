@@ -701,6 +701,141 @@ function Get-OsmPhotoConsent {
   Write-Host "✅ Photograph consent report saved to $outputFileInitials"
   return $photoConsentFullname
 }
+function Get-OsmDietary {
+  <#
+  .SYNOPSIS
+  Retrieves allergies & dietary requirements of members from OSM.
+
+  .DESCRIPTION
+  Generates a report of members with allergies & dietary requirements.
+  Output is saved as an HTML file in the Downloads folder
+  and optionally sent to a printer.
+
+  .PARAMETER sectionId
+  The OSM section ID to generate the report for.
+
+  .PARAMETER print
+  Optional switch to send the output directly to the default printer.
+
+  .EXAMPLE
+  Get-OsmDietary -sectionId 12345
+
+  .EXAMPLE
+  Get-OsmDietary -sectionId 12345 -print
+  #>
+  param (
+    [int]$sectionId,
+    [switch]$print
+  )
+
+  Assert-ValidSection -sectionId $sectionId
+  
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $sectionName = $section.sectionName
+  $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
+
+  # Members
+  Write-Host "🔄 Fetching member list from OSM..."
+  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
+  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
+  Write-Host "✅ Retrieved $($membersList.Count) members"
+
+  # Members allergies & dietary requirements
+  Write-Host "🔄 Fetching members allergies & dietary requirements from OSM..."
+  $dietaryFullname = @()
+  $dietaryInitials = @()
+  foreach ($member in $membersList) {
+    $memberFullname = $member.full_name
+    $fname = $member.firstname
+    $lname = $member.lastname
+    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
+    if ($lname -match "-") {
+      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
+    } else {
+      $linit = $lname[0].ToString().ToUpper()
+    }
+    $memberInitials = "$finit$linit"
+    $memberId = $member.scoutid
+    $membersDataUrlWithParams = Add-QueryParams -url $membersDataUrl -params @{
+      section_id = $sectionId
+      associated_id = $memberId
+      associated_type = "member"
+      context = "members"
+    }
+    $memberData = (Invoke-OsmApi -url $membersDataUrlWithParams).data
+    $memberAllergies = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "allergies" }).value
+    $memberDietary = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "dietary" }).value
+
+    if (($memberAllergies -ne "N/A" -and $memberAllergies -ne "None" -and $memberAllergies -ne "" -and $memberAllergies -ne "NKDA") -or ($memberDietary -ne "N/A" -and $memberDietary -ne "None" -and $memberDietary -ne "")) {
+      $dietaryFullname += [PSCustomObject]@{
+        Name      = $memberFullname
+        Allergies = $memberAllergies
+        Dietary   = $memberDietary
+      }
+      $dietaryInitials += [PSCustomObject]@{
+        Name      = $memberInitials
+        Allergies = $memberAllergies
+        Dietary   = $memberDietary
+      }
+    }
+  }
+  Write-Host "✅ Retrieved $($dietaryFullname.Count) members with allergies & dietary requirements"
+
+  # Output report
+  $htmlParams = @{
+    Head = $htmlStyle
+    Title = "$sectionName Allergies & Dietary Requirements"
+    PreContent = "<h1>$sectionName Allergies & Dietary Requirements</h1>"
+  }
+  $outputFileFullname = "$downloadsPath\allergies_dietary_fullname_$sectionNameFile.html"
+  $outputFileInitials = "$downloadsPath\allergies_dietary_initials_$sectionNameFile.html"
+  $dietaryFullname | ConvertTo-Html @htmlParams | Out-File $outputFileFullname
+  $dietaryInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
+
+  if ($print) {
+    try {
+      # Convert HTML to PDF for printing
+      $pdfPathFullname = "$downloadsPath\allergies_dietary_fullname_$sectionNameFile.pdf"
+      $pdfPathInitials = "$downloadsPath\allergies_dietary_initials_$sectionNameFile.pdf"
+      ConvertTo-PdfForPrinting -htmlPath $outputFileFullname -pdfPath $pdfPathFullname
+      ConvertTo-PdfForPrinting -htmlPath $outputFileInitials -pdfPath $pdfPathInitials
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPathFullname -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPathInitials -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      Write-Host "✅ Print job sent successfully"
+    } catch {
+      Write-Warning "⚠️ Failed to print: $_"
+    }
+  }
+
+  Write-Host "✅ Allergies & dietary requirements report saved to $outputFileFullname"
+  Write-Host "✅ Allergies & dietary requirements report saved to $outputFileInitials"
+  return $dietaryFullname
+}
 
 # Main
 try {

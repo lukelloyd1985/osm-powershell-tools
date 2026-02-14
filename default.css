@@ -1,5 +1,5 @@
 table {
-  width: 600px;
+  width: auto;
   border-collapse: collapse;
   border-width: 2px;
   border-style: solid;
@@ -7,6 +7,14 @@ table {
   color: black;
   font-size: 24px;
   text-align: center;
+}
+
+th, td {
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  border-left: none;
+  border-right: none;
+  padding: 4px 12px;
 }
 
 th {
