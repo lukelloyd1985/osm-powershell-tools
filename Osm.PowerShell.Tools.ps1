@@ -697,8 +697,9 @@ function Get-OsmPhotoConsent {
     }
   }
 
-  Write-Host "✅ Photograph consent report saved to $outputFile"
-  return $consents
+  Write-Host "✅ Photograph consent report saved to $outputFileFullname"
+  Write-Host "✅ Photograph consent report saved to $outputFileInitials"
+  return $photoConsentFullname
 }
 
 # Main
