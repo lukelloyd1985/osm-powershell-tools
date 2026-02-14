@@ -744,10 +744,10 @@ function Get-OsmDietary {
   $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
   Write-Host "✅ Retrieved $($membersList.Count) members"
 
-  # Members photograph consent
-  Write-Host "🔄 Fetching members photograph consent from OSM..."
-  $photoConsentFullname = @()
-  $photoConsentInitials = @()
+  # Members allergies & dietary requirements
+  Write-Host "🔄 Fetching members allergies & dietary requirements from OSM..."
+  $dietaryFullname = @()
+  $dietaryInitials = @()
   foreach ($member in $membersList) {
     $memberFullname = $member.full_name
     $fname = $member.firstname
@@ -767,41 +767,48 @@ function Get-OsmDietary {
       context = "members"
     }
     $memberData = (Invoke-OsmApi -url $membersDataUrlWithParams).data
-    $memberPhotoConsent = (($memberData | where { $_.identifier -eq "consents" }).columns | where { $_.label -eq "Photographs" } | Select varname, value)
-    $memberPhotoInt = ($memberPhotoConsent | where { $_.varname -eq "photographs_internal" }).value
-    $memberPhotoExt = ($memberPhotoConsent | where { $_.varname -eq "photographs_tsa" }).value
+    $memberAllergies = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "allergies" } | Select value)
+    $memberDietary = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "dietary" } | Select value)
 
-    if ($memberPhotoInt -eq "No" -or $memberPhotoExt -eq "No") {
-      $photoConsentFullname += [PSCustomObject]@{
+    $dietaryFullname += [PSCustomObject]@{
+      Name      = $memberFullname
+      Allergies = $memberAllergies
+      Dietary   = $memberDietary
+    }
+
+    <#
+    if ($memberAllergies -ne "N/A" -or $memberAllergies -ne "None" -or $memberDietary -ne "N/A" -or $memberDietary -ne "None") {
+      $dietaryFullname += [PSCustomObject]@{
         Name      = $memberFullname
-        PhotosInt = $memberPhotoInt
-        PhotosExt = $memberPhotoExt
+        Allergies = $memberAllergies
+        Dietary   = $memberDietary
       }
-      $photoConsentInitials += [PSCustomObject]@{
+      $dietaryInitials += [PSCustomObject]@{
         Name      = $memberInitials
-        PhotosInt = $memberPhotoInt
-        PhotosExt = $memberPhotoExt
+        Allergies = $memberAllergies
+        Dietary   = $memberDietary
       }
     }
+    #>
   }
-  Write-Host "✅ Retrieved $($photoConsentFullname.Count) members with no photograph consent"
+  Write-Host "✅ Retrieved $($dietaryFullname.Count) members with allergies & dietary requirements"
 
   # Output report
   $htmlParams = @{
     Head = $htmlStyle
-    Title = "$sectionName Photograph Consent"
-    PreContent = "<h1>$sectionName Photograph Consent</h1>"
+    Title = "$sectionName Allergies & Dietary Requirements"
+    PreContent = "<h1>$sectionName Allergies & Dietary Requirements</h1>"
   }
-  $outputFileFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.html"
-  $outputFileInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.html"
-  $photoConsentFullname | ConvertTo-Html @htmlParams | Out-File $outputFileFullname
-  $photoConsentInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
+  $outputFileFullname = "$downloadsPath\allergies_dietary_fullname_$sectionNameFile.html"
+  $outputFileInitials = "$downloadsPath\allergies_dietary_initials_$sectionNameFile.html"
+  $dietaryFullname | ConvertTo-Html @htmlParams | Out-File $outputFileFullname
+  $dietaryInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
 
   if ($print) {
     try {
       # Convert HTML to PDF for printing
-      $pdfPathFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.pdf"
-      $pdfPathInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.pdf"
+      $pdfPathFullname = "$downloadsPath\allergies_dietary_fullname_$sectionNameFile.pdf"
+      $pdfPathInitials = "$downloadsPath\allergies_dietary_initials_$sectionNameFile.pdf"
       ConvertTo-PdfForPrinting -htmlPath $outputFileFullname -pdfPath $pdfPathFullname
       ConvertTo-PdfForPrinting -htmlPath $outputFileInitials -pdfPath $pdfPathInitials
 
@@ -833,9 +840,9 @@ function Get-OsmDietary {
     }
   }
 
-  Write-Host "✅ Photograph consent report saved to $outputFileFullname"
-  Write-Host "✅ Photograph consent report saved to $outputFileInitials"
-  return $photoConsentFullname
+  Write-Host "✅ Allergies & dietary requirements report saved to $outputFileFullname"
+  Write-Host "✅ Allergies & dietary requirements report saved to $outputFileInitials"
+  return $dietaryFullname
 }
 
 # Main
