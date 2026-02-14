@@ -701,6 +701,142 @@ function Get-OsmPhotoConsent {
   Write-Host "✅ Photograph consent report saved to $outputFileInitials"
   return $photoConsentFullname
 }
+function Get-OsmDietary {
+  <#
+  .SYNOPSIS
+  Retrieves allergies & dietary requirements of members from OSM.
+
+  .DESCRIPTION
+  Generates a report of members with allergies & dietary requirements.
+  Output is saved as an HTML file in the Downloads folder
+  and optionally sent to a printer.
+
+  .PARAMETER sectionId
+  The OSM section ID to generate the report for.
+
+  .PARAMETER print
+  Optional switch to send the output directly to the default printer.
+
+  .EXAMPLE
+  Get-OsmDietary -sectionId 12345
+
+  .EXAMPLE
+  Get-OsmDietary -sectionId 12345 -print
+  #>
+  param (
+    [int]$sectionId,
+    [switch]$print
+  )
+
+  Assert-ValidSection -sectionId $sectionId
+  
+  $section = $sections | Where-Object { $_.sectionId -eq $sectionId }
+  $termId = $section.termId
+  $sectionName = $section.sectionName
+  $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
+
+  # Members
+  Write-Host "🔄 Fetching member list from OSM..."
+  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
+  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
+  Write-Host "✅ Retrieved $($membersList.Count) members"
+
+  # Members photograph consent
+  Write-Host "🔄 Fetching members photograph consent from OSM..."
+  $photoConsentFullname = @()
+  $photoConsentInitials = @()
+  foreach ($member in $membersList) {
+    $memberFullname = $member.full_name
+    $fname = $member.firstname
+    $lname = $member.lastname
+    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
+    if ($lname -match "-") {
+      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
+    } else {
+      $linit = $lname[0].ToString().ToUpper()
+    }
+    $memberInitials = "$finit$linit"
+    $memberId = $member.scoutid
+    $membersDataUrlWithParams = Add-QueryParams -url $membersDataUrl -params @{
+      section_id = $sectionId
+      associated_id = $memberId
+      associated_type = "member"
+      context = "members"
+    }
+    $memberData = (Invoke-OsmApi -url $membersDataUrlWithParams).data
+    $memberPhotoConsent = (($memberData | where { $_.identifier -eq "consents" }).columns | where { $_.label -eq "Photographs" } | Select varname, value)
+    $memberPhotoInt = ($memberPhotoConsent | where { $_.varname -eq "photographs_internal" }).value
+    $memberPhotoExt = ($memberPhotoConsent | where { $_.varname -eq "photographs_tsa" }).value
+
+    if ($memberPhotoInt -eq "No" -or $memberPhotoExt -eq "No") {
+      $photoConsentFullname += [PSCustomObject]@{
+        Name      = $memberFullname
+        PhotosInt = $memberPhotoInt
+        PhotosExt = $memberPhotoExt
+      }
+      $photoConsentInitials += [PSCustomObject]@{
+        Name      = $memberInitials
+        PhotosInt = $memberPhotoInt
+        PhotosExt = $memberPhotoExt
+      }
+    }
+  }
+  Write-Host "✅ Retrieved $($photoConsentFullname.Count) members with no photograph consent"
+
+  # Output report
+  $htmlParams = @{
+    Head = $htmlStyle
+    Title = "$sectionName Photograph Consent"
+    PreContent = "<h1>$sectionName Photograph Consent</h1>"
+  }
+  $outputFileFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.html"
+  $outputFileInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.html"
+  $photoConsentFullname | ConvertTo-Html @htmlParams | Out-File $outputFileFullname
+  $photoConsentInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
+
+  if ($print) {
+    try {
+      # Convert HTML to PDF for printing
+      $pdfPathFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.pdf"
+      $pdfPathInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.pdf"
+      ConvertTo-PdfForPrinting -htmlPath $outputFileFullname -pdfPath $pdfPathFullname
+      ConvertTo-PdfForPrinting -htmlPath $outputFileInitials -pdfPath $pdfPathInitials
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPathFullname -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      # Print the PDF using Start-Process with Print verb
+      $printProcess = Start-Process -FilePath $pdfPathInitials -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+
+      Write-Host "✅ Print job sent successfully"
+    } catch {
+      Write-Warning "⚠️ Failed to print: $_"
+    }
+  }
+
+  Write-Host "✅ Photograph consent report saved to $outputFileFullname"
+  Write-Host "✅ Photograph consent report saved to $outputFileInitials"
+  return $photoConsentFullname
+}
 
 # Main
 try {
