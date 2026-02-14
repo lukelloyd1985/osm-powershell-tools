@@ -770,7 +770,7 @@ function Get-OsmDietary {
     $memberAllergies = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "allergies" }).value
     $memberDietary = (($memberData | where { $_.identifier -eq "standard_fields" }).columns | where { $_.varname -eq "dietary" }).value
 
-    if ($memberAllergies -ne "N/A" -or $memberAllergies -ne "None" -or $memberAllergies -ne "" -or $memberAllergies -ne "NKDA" -or $memberDietary -ne "N/A" -or $memberDietary -ne "None" -or $memberDietary -ne "") {
+    if ($memberAllergies -ne "N/A" -and $memberAllergies -ne "None" -and $memberAllergies -ne "" -and $memberAllergies -ne "NKDA" -and $memberDietary -ne "N/A" -and $memberDietary -ne "None" -and $memberDietary -ne "") {
       $dietaryFullname += [PSCustomObject]@{
         Name      = $memberFullname
         Allergies = $memberAllergies
