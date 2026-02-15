@@ -289,8 +289,9 @@ function New-OsmParentRota {
 
   .DESCRIPTION
   Generates a randomized parent rota assigning two parents per future meeting.
-  The rota excludes leaders and members in the exclusion file. Output is saved
-  as an HTML file in the Downloads folder and optionally sent to a printer.
+  The rota excludes leaders and members in the exclusion file. The assigned parents
+  are automatically updated in OSM programme meetings (shown as full names on agendas).
+  Output is also saved as an HTML file in the Downloads folder and optionally sent to a printer.
 
   .PARAMETER sectionId
   The OSM section ID to generate the rota for.
@@ -331,8 +332,13 @@ function New-OsmParentRota {
   }
   $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $leadersSurnames -notcontains $_.lastname -and $_.patrolid -gt 0 }
-  $initials = foreach ($member in $filteredMembers) {
-    Get-MemberInitials -firstName $member.firstname -lastName $member.lastname
+
+  # Create member objects with both initials and full names for rota assignment
+  $membersForRota = foreach ($member in $filteredMembers) {
+    [PSCustomObject]@{
+      Initials = Get-MemberInitials -firstName $member.firstname -lastName $member.lastname
+      FullName = $member.full_name
+    }
   }
 
   # Programme
@@ -345,37 +351,65 @@ function New-OsmParentRota {
   $futureMeetings = $programmeSummary | Where-Object { [datetime]$_.meetingdate -gt (Get-Date) }
   Write-Host "✅ Found $($futureMeetings.Count) future meetings"
 
-  # Randomly assign 2 members initials per meeting (with no re-use, replenishing when empty)
-  $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
+  # Randomly assign 2 members per meeting (with no re-use, replenishing when empty)
+  $shuffledMembers = Get-Random -InputObject $membersForRota -Count $membersForRota.Count
   $assignments = @()
+  $updateCount = 0
+  $updateErrors = 0
+
+  Write-Host "🔄 Assigning parents to $($futureMeetings.Count) future meetings..."
+
   foreach ($meeting in $futureMeetings) {
     $dateUK = (Get-Date $meeting.meetingdate -Format "dd-MM-yyyy")
 
-    # Replenish shuffledInitials if we don't have enough for assignment
-    if ($shuffledInitials.Count -lt 2) {
-      $shuffledInitials = Get-Random -InputObject $initials -Count $initials.Count
+    # Replenish shuffledMembers if we don't have enough for assignment
+    if ($shuffledMembers.Count -lt 2) {
+      $shuffledMembers = Get-Random -InputObject $membersForRota -Count $membersForRota.Count
     }
 
     # Safely extract assignments
-    if ($shuffledInitials.Count -ge 2) {
-      $assigned = $shuffledInitials[0..1]
-      if ($shuffledInitials.Count -gt 2) {
-        $shuffledInitials = $shuffledInitials[2..($shuffledInitials.Count-1)]
+    if ($shuffledMembers.Count -ge 2) {
+      $assigned = $shuffledMembers[0..1]
+      if ($shuffledMembers.Count -gt 2) {
+        $shuffledMembers = $shuffledMembers[2..($shuffledMembers.Count-1)]
       } else {
-        $shuffledInitials = @()
+        $shuffledMembers = @()
       }
     } else {
       # Handle edge case with fewer than 2 members
-      $assigned = $shuffledInitials
-      $shuffledInitials = @()
+      $assigned = $shuffledMembers
+      $shuffledMembers = @()
     }
-    $assignedText = ($assigned -join " & ")
+
+    $assignedInitials = ($assigned | ForEach-Object { $_.Initials }) -join " & "
+    $assignedFullNames = ($assigned | ForEach-Object { $_.FullName }) -join " & "
+
+    # Update the meeting in OSM with the assigned parents
+    try {
+      $body = @{
+        sectionid = $sectionId
+        eveningid = $meeting.eveningid
+        adults = $assignedFullNames
+      }
+      $updateResult = Invoke-OsmApi -url $programmeUpdateUrl -Method "POST" -Body $body
+      $updateCount++
+    } catch {
+      Write-Warning "⚠️ Failed to update meeting on $dateUK`: $_"
+      $updateErrors++
+    }
 
     $assignments += [PSCustomObject]@{
       Date     = $dateUK
       Title    = $meeting.title
-      Assigned = $assignedText
+      Assigned = $assignedInitials
     }
+  }
+
+  if ($updateCount -gt 0) {
+    Write-Host "✅ Updated $updateCount meeting(s) in OSM with assigned parents"
+  }
+  if ($updateErrors -gt 0) {
+    Write-Warning "⚠️ $updateErrors meeting(s) could not be updated in OSM"
   }
 
   # Output rota
