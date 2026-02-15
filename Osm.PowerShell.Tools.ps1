@@ -290,7 +290,7 @@ function New-OsmParentRota {
   .DESCRIPTION
   Generates a randomized parent rota assigning two parents per future meeting.
   The rota excludes leaders and members in the exclusion file. The assigned parents
-  are automatically updated in OSM programme meetings (shown as full names on agendas).
+  are automatically updated in OSM programme meetings.
   Output is also saved as an HTML file in the Downloads folder and optionally sent to a printer.
 
   .PARAMETER sectionId
@@ -333,11 +333,12 @@ function New-OsmParentRota {
   $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $leadersSurnames -notcontains $_.lastname -and $_.patrolid -gt 0 }
 
-  # Create member objects with both initials and full names for rota assignment
+  # Create member objects with both initials, full names & ids for rota assignment
   $membersForRota = foreach ($member in $filteredMembers) {
     [PSCustomObject]@{
       Initials = Get-MemberInitials -firstName $member.firstname -lastName $member.lastname
       FullName = $member.full_name
+      MemberId = $member.scoutid
     }
   }
 
@@ -382,20 +383,16 @@ function New-OsmParentRota {
     }
 
     $assignedInitials = ($assigned | ForEach-Object { $_.Initials }) -join " & "
-    $assignedFullNames = ($assigned | ForEach-Object { $_.FullName }) -join " & "
 
     # Update the meeting in OSM with the assigned parents
-    try {
-      $body = @{
-        sectionid = $sectionId
-        eveningid = $meeting.eveningid
-        adults = $assignedFullNames
-      }
-      $updateResult = Invoke-OsmApi -url $programmeUpdateUrl -Method "POST" -Body $body
-      $updateCount++
-    } catch {
-      Write-Warning "⚠️ Failed to update meeting on $dateUK`: $_"
-      $updateErrors++
+    $body = @{
+      sectionid = $sectionId
+      eveningid = $meeting.eveningid
+      scoutid   = 0
+      members   = $assigned.MemberId
+    }
+    if($meeting.eveningid -eq 9405916) {
+      Invoke-OsmApi -url $programmeAddParentUrl -Method "POST" -Body $body
     }
 
     $assignments += [PSCustomObject]@{
@@ -403,13 +400,6 @@ function New-OsmParentRota {
       Title    = $meeting.title
       Assigned = $assignedInitials
     }
-  }
-
-  if ($updateCount -gt 0) {
-    Write-Host "✅ Updated $updateCount meeting(s) in OSM with assigned parents"
-  }
-  if ($updateErrors -gt 0) {
-    Write-Warning "⚠️ $updateErrors meeting(s) could not be updated in OSM"
   }
 
   # Output rota
@@ -427,7 +417,7 @@ function New-OsmParentRota {
   }
 
   Write-Host "✅ Parent rota saved to $outputFile"
-  return $assignments
+  return $assignments | Format-Table
 }
 function Get-OsmPaperRegister {
   <#
