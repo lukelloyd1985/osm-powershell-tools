@@ -98,6 +98,63 @@ function Add-QueryParams {
   return "$url&$queryString"
 }
 
+function Get-MemberInitials {
+  <#
+  .SYNOPSIS
+  Generates member initials from first and last name.
+
+  .PARAMETER firstName
+  The member's first name.
+
+  .PARAMETER lastName
+  The member's last name.
+
+  .OUTPUTS
+  String - The member's initials in the format "FiLi" (e.g., "JoS" for John Smith).
+  #>
+  param(
+    [string]$firstName,
+    [string]$lastName
+  )
+
+  $finit = ($firstName[0].ToString().ToUpper() + $firstName[1].ToString().ToLower())
+  if ($lastName -match "-") {
+    $linit = ($lastName -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
+  } else {
+    $linit = $lastName[0].ToString().ToUpper()
+  }
+  return "$finit$linit"
+}
+
+function Get-OsmMembers {
+  <#
+  .SYNOPSIS
+  Retrieves member list from OSM for a given section and term.
+
+  .PARAMETER sectionId
+  The OSM section ID.
+
+  .PARAMETER termId
+  The OSM term ID.
+
+  .OUTPUTS
+  Array - The list of members from OSM.
+  #>
+  param(
+    [int]$sectionId,
+    [int]$termId
+  )
+
+  Write-Host "🔄 Fetching member list from OSM..."
+  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
+    sectionid = $sectionId
+    termid = $termId
+  }
+  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
+  Write-Host "✅ Retrieved $($membersList.Count) members"
+  return $membersList
+}
+
 function ConvertTo-PdfForPrinting {
   <#
   .SYNOPSIS
@@ -176,6 +233,54 @@ function ConvertTo-PdfForPrinting {
   return $pdfPath
 }
 
+function Invoke-PrintReport {
+  <#
+  .SYNOPSIS
+  Prints one or more HTML reports by converting to PDF and sending to the default printer.
+
+  .PARAMETER htmlPaths
+  Array of HTML file paths to print.
+
+  .PARAMETER pdfPaths
+  Array of PDF file paths to create (must match htmlPaths length).
+
+  .OUTPUTS
+  None - Sends print jobs to the default printer.
+  #>
+  param(
+    [string[]]$htmlPaths,
+    [string[]]$pdfPaths
+  )
+
+  if ($htmlPaths.Count -ne $pdfPaths.Count) {
+    throw "htmlPaths and pdfPaths must have the same length"
+  }
+
+  try {
+    # Convert all HTML files to PDF
+    for ($i = 0; $i -lt $htmlPaths.Count; $i++) {
+      ConvertTo-PdfForPrinting -htmlPath $htmlPaths[$i] -pdfPath $pdfPaths[$i]
+    }
+
+    # Print all PDFs
+    foreach ($pdfPath in $pdfPaths) {
+      $printProcess = Start-Process -FilePath $pdfPath -Verb Print -PassThru
+
+      # Wait for print dialog to appear, then close the PDF viewer
+      Start-Sleep -Seconds 5
+      if (-not $printProcess.HasExited) {
+        if (-not $printProcess.CloseMainWindow()) {
+          Stop-Process -Id $printProcess.Id -Force
+        }
+      }
+    }
+
+    Write-Host "✅ Print job sent successfully"
+  } catch {
+    Write-Warning "⚠️ Failed to print: $_"
+  }
+}
+
 # Functions
 function New-OsmParentRota {
   <#
@@ -213,13 +318,7 @@ function New-OsmParentRota {
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
 
   # Members
-  Write-Host "🔄 Fetching member list from OSM..."
-  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
-    sectionid = $sectionId
-    termid = $termId
-  }
-  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
-  Write-Host "✅ Retrieved $($membersList.Count) members"
+  $membersList = Get-OsmMembers -sectionId $sectionId -termId $termId
 
   # Check for exclusion file and provide guidance if missing
   $excludeFile = "$downloadsPath\exclude_$sectionNameFile.txt"
@@ -233,15 +332,7 @@ function New-OsmParentRota {
   $leadersSurnames = ($membersList | Where-Object { $_.patrolid -lt 0 }).lastname
   $filteredMembers = $membersList | Sort-Object lastname -Unique | Where-Object { $excludeMembers -notcontains $_.lastname -and $leadersSurnames -notcontains $_.lastname -and $_.patrolid -gt 0 }
   $initials = foreach ($member in $filteredMembers) {
-    $fname = $member.firstname
-    $lname = $member.lastname
-    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
-    if ($lname -match "-") {
-      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
-    } else {
-      $linit = $lname[0].ToString().ToUpper()
-    }
-    "$finit$linit"
+    Get-MemberInitials -firstName $member.firstname -lastName $member.lastname
   }
 
   # Programme
@@ -297,26 +388,8 @@ function New-OsmParentRota {
   $assignments | ConvertTo-Html @htmlParams | Out-File $outputFile
 
   if ($print) {
-    try {
-      # Convert HTML to PDF for printing
-      $pdfPath = "$downloadsPath\parent_rota_$sectionNameFile.pdf"
-      ConvertTo-PdfForPrinting -htmlPath $outputFile -pdfPath $pdfPath
-
-      # Print the PDF using Start-Process with Print verb
-      $printProcess = Start-Process -FilePath $pdfPath -Verb Print -PassThru
-
-      # Wait for print dialog to appear, then close the PDF viewer
-      Start-Sleep -Seconds 5
-      if (-not $printProcess.HasExited) {
-        if (-not $printProcess.CloseMainWindow()) {
-          Stop-Process -Id $printProcess.Id -Force
-        }
-      }
-
-      Write-Host "✅ Print job sent successfully"
-    } catch {
-      Write-Warning "⚠️ Failed to print: $_"
-    }
+    $pdfPath = "$downloadsPath\parent_rota_$sectionNameFile.pdf"
+    Invoke-PrintReport -htmlPaths @($outputFile) -pdfPaths @($pdfPath)
   }
 
   Write-Host "✅ Parent rota saved to $outputFile"
@@ -380,8 +453,8 @@ function Get-OsmPaperRegister {
   Invoke-OsmApi -url $printRegisterUrlWithParams -method "DOWNLOAD" -file $outputFile
 
   if ($print) {
+    # Print PDF directly without conversion (already a PDF)
     try {
-      # Print the PDF using Start-Process with Print verb
       $printProcess = Start-Process -FilePath $outputFile -Verb Print -PassThru
 
       # Wait for print dialog to appear, then close the PDF viewer
@@ -600,13 +673,7 @@ function Get-OsmPhotoConsent {
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
 
   # Members
-  Write-Host "🔄 Fetching member list from OSM..."
-  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
-    sectionid = $sectionId
-    termid = $termId
-  }
-  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
-  Write-Host "✅ Retrieved $($membersList.Count) members"
+  $membersList = Get-OsmMembers -sectionId $sectionId -termId $termId
 
   # Members photograph consent
   Write-Host "🔄 Fetching members photograph consent from OSM..."
@@ -614,15 +681,7 @@ function Get-OsmPhotoConsent {
   $photoConsentInitials = @()
   foreach ($member in $membersList) {
     $memberFullname = $member.full_name
-    $fname = $member.firstname
-    $lname = $member.lastname
-    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
-    if ($lname -match "-") {
-      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
-    } else {
-      $linit = $lname[0].ToString().ToUpper()
-    }
-    $memberInitials = "$finit$linit"
+    $memberInitials = Get-MemberInitials -firstName $member.firstname -lastName $member.lastname
     $memberId = $member.scoutid
     $membersDataUrlWithParams = Add-QueryParams -url $membersDataUrl -params @{
       section_id = $sectionId
@@ -662,39 +721,9 @@ function Get-OsmPhotoConsent {
   $photoConsentInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
 
   if ($print) {
-    try {
-      # Convert HTML to PDF for printing
-      $pdfPathFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.pdf"
-      $pdfPathInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.pdf"
-      ConvertTo-PdfForPrinting -htmlPath $outputFileFullname -pdfPath $pdfPathFullname
-      ConvertTo-PdfForPrinting -htmlPath $outputFileInitials -pdfPath $pdfPathInitials
-
-      # Print the PDF using Start-Process with Print verb
-      $printProcess = Start-Process -FilePath $pdfPathFullname -Verb Print -PassThru
-
-      # Wait for print dialog to appear, then close the PDF viewer
-      Start-Sleep -Seconds 5
-      if (-not $printProcess.HasExited) {
-        if (-not $printProcess.CloseMainWindow()) {
-          Stop-Process -Id $printProcess.Id -Force
-        }
-      }
-
-      # Print the PDF using Start-Process with Print verb
-      $printProcess = Start-Process -FilePath $pdfPathInitials -Verb Print -PassThru
-
-      # Wait for print dialog to appear, then close the PDF viewer
-      Start-Sleep -Seconds 5
-      if (-not $printProcess.HasExited) {
-        if (-not $printProcess.CloseMainWindow()) {
-          Stop-Process -Id $printProcess.Id -Force
-        }
-      }
-
-      Write-Host "✅ Print job sent successfully"
-    } catch {
-      Write-Warning "⚠️ Failed to print: $_"
-    }
+    $pdfPathFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.pdf"
+    $pdfPathInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.pdf"
+    Invoke-PrintReport -htmlPaths @($outputFileFullname, $outputFileInitials) -pdfPaths @($pdfPathFullname, $pdfPathInitials)
   }
 
   Write-Host "✅ Photograph consent report saved to $outputFileFullname"
@@ -736,13 +765,7 @@ function Get-OsmDietary {
   $sectionNameFile = $sectionName.Replace(" ", "_").ToLower()
 
   # Members
-  Write-Host "🔄 Fetching member list from OSM..."
-  $membersListUrlWithParams = Add-QueryParams -url $membersListUrl -params @{
-    sectionid = $sectionId
-    termid = $termId
-  }
-  $membersList = (Invoke-OsmApi -url $membersListUrlWithParams).items
-  Write-Host "✅ Retrieved $($membersList.Count) members"
+  $membersList = Get-OsmMembers -sectionId $sectionId -termId $termId
 
   # Members allergies & dietary requirements
   Write-Host "🔄 Fetching members allergies & dietary requirements from OSM..."
@@ -750,15 +773,7 @@ function Get-OsmDietary {
   $dietaryInitials = @()
   foreach ($member in $membersList) {
     $memberFullname = $member.full_name
-    $fname = $member.firstname
-    $lname = $member.lastname
-    $finit = ($fname[0].ToString().ToUpper() + $fname[1].ToString().ToLower())
-    if ($lname -match "-") {
-      $linit = ($lname -split "-" | ForEach-Object { $_[0].ToString().ToUpper() }) -join "-"
-    } else {
-      $linit = $lname[0].ToString().ToUpper()
-    }
-    $memberInitials = "$finit$linit"
+    $memberInitials = Get-MemberInitials -firstName $member.firstname -lastName $member.lastname
     $memberId = $member.scoutid
     $membersDataUrlWithParams = Add-QueryParams -url $membersDataUrl -params @{
       section_id = $sectionId
@@ -797,39 +812,9 @@ function Get-OsmDietary {
   $dietaryInitials | ConvertTo-Html @htmlParams | Out-File $outputFileInitials
 
   if ($print) {
-    try {
-      # Convert HTML to PDF for printing
-      $pdfPathFullname = "$downloadsPath\allergies_dietary_fullname_$sectionNameFile.pdf"
-      $pdfPathInitials = "$downloadsPath\allergies_dietary_initials_$sectionNameFile.pdf"
-      ConvertTo-PdfForPrinting -htmlPath $outputFileFullname -pdfPath $pdfPathFullname
-      ConvertTo-PdfForPrinting -htmlPath $outputFileInitials -pdfPath $pdfPathInitials
-
-      # Print the PDF using Start-Process with Print verb
-      $printProcess = Start-Process -FilePath $pdfPathFullname -Verb Print -PassThru
-
-      # Wait for print dialog to appear, then close the PDF viewer
-      Start-Sleep -Seconds 5
-      if (-not $printProcess.HasExited) {
-        if (-not $printProcess.CloseMainWindow()) {
-          Stop-Process -Id $printProcess.Id -Force
-        }
-      }
-
-      # Print the PDF using Start-Process with Print verb
-      $printProcess = Start-Process -FilePath $pdfPathInitials -Verb Print -PassThru
-
-      # Wait for print dialog to appear, then close the PDF viewer
-      Start-Sleep -Seconds 5
-      if (-not $printProcess.HasExited) {
-        if (-not $printProcess.CloseMainWindow()) {
-          Stop-Process -Id $printProcess.Id -Force
-        }
-      }
-
-      Write-Host "✅ Print job sent successfully"
-    } catch {
-      Write-Warning "⚠️ Failed to print: $_"
-    }
+    $pdfPathFullname = "$downloadsPath\allergies_dietary_fullname_$sectionNameFile.pdf"
+    $pdfPathInitials = "$downloadsPath\allergies_dietary_initials_$sectionNameFile.pdf"
+    Invoke-PrintReport -htmlPaths @($outputFileFullname, $outputFileInitials) -pdfPaths @($pdfPathFullname, $pdfPathInitials)
   }
 
   Write-Host "✅ Allergies & dietary requirements report saved to $outputFileFullname"
