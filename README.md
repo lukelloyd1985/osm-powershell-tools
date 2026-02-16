@@ -12,8 +12,15 @@ Follow these steps to create an Online Scout Manager (OSM) application which is 
 4. Click **Developer Tools** from the left-hand menu
 5. Click **Create Application**
 6. Enter **osm-powershell-tools** as the application name
-7. Click **Save**.
-8. The **OAuth Client ID** and **OAuth Secret** will be displayed **only once**. Make sure to note them down.
+7. Click **Save**
+8. Close the **Application Created** pop-up (**X** top right)
+9. Click **Edit** on the **osm-powershell-tools** application
+10. Tick the **Client Credentials Grant** box and click **Save**
+11. Click **Regenerate Keys** on the **osm-powershell-tools** application
+12. Type **CONFIRM** and click **Confirm**
+13. Type **I am a developer** and click **Reveal Credentials**
+14. The **OAuth Client ID** and **OAuth Secret** will be displayed **only once**. Make sure to note them down.
+15. Close the **Application Keys Regenerated** pop-up (**X** top right)
 
 ## Usage
 
