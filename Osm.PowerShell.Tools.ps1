@@ -713,7 +713,11 @@ function Get-OsmPhotoConsent {
   $htmlParams = @{
     Head = $htmlStyle
     Title = "$sectionName Photograph Consent"
-    PreContent = "<h1>$sectionName Photograph Consent</h1>"
+    PreContent = @"
+<h1>$sectionName Photograph Consent</h1>
+<p><strong>Internal Photographs:</strong> permission to use photographs/video/audio recordings on notice boards in our Scout hut & in our closed Facebook groups</p>
+<p><strong>TSA (The Scout Association) Photographs:</strong> permission to use photographs/video/audio recordings in our public media. We would always do this without using their name unless we asked for your permission to use their name in a unique circumstance.</p>
+"@
   }
   $outputFileFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.html"
   $outputFileInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.html"
