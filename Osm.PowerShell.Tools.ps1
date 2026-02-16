@@ -710,10 +710,13 @@ function Get-OsmPhotoConsent {
   Write-Host "✅ Retrieved $($photoConsentFullname.Count) members with no photograph consent"
 
   # Output report
+  $htmlPreContent = "<h1>$sectionName Photograph Consent</h1>"
+  $htmlPreContent += "<p><strong>Internal Photographs:</strong> permission to use photographs/video/audio recordings on notice boards in our Scout hut & in our closed Facebook groups</p>"
+  $htmlPreContent += "<p><strong>TSA (The Scout Association) Photographs:</strong> permission to use photographs/video/audio recordings in our public media. We would always do this without using their name unless we asked for your permission to use their name in a unique circumstance.</p>"
   $htmlParams = @{
     Head = $htmlStyle
     Title = "$sectionName Photograph Consent"
-    PreContent = "<h1>$sectionName Photograph Consent</h1>"
+    PreContent = $htmlPreContent
   }
   $outputFileFullname = "$downloadsPath\photograph_consent_fullname_$sectionNameFile.html"
   $outputFileInitials = "$downloadsPath\photograph_consent_initials_$sectionNameFile.html"
